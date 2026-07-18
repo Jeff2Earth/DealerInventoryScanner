@@ -403,8 +403,6 @@ export default function LotLedger() {
   const makes = useMemo(() => Array.from(new Set(records.map((r) => r.make).filter(Boolean))).sort(), [records]);
   const models = useMemo(() => Array.from(new Set(records.map((r) => r.model).filter(Boolean))).sort(), [records]);
   const types = useMemo(() => Array.from(new Set(records.map((r) => r.type).filter(Boolean))).sort(), [records]);
-  const statuses = useMemo(() => Array.from(new Set(records.map((r) => r.status).filter(Boolean))).sort(), [records]);
-  const recalls = useMemo(() => Array.from(new Set(records.map((r) => r.recall).filter(Boolean))).sort(), [records]);
   const scanDates = useMemo(() => Array.from(new Set(records.map((r) => r.scanDate).filter(Boolean))).sort().reverse(), [records]);
 
   const filtered = useMemo(() => {
@@ -632,10 +630,6 @@ export default function LotLedger() {
                     onChange={(vals) => setFilters((f) => ({ ...f, model: vals }))} />
                   <MultiSelect label="Type" options={types} selected={filters.type}
                     onChange={(vals) => setFilters((f) => ({ ...f, type: vals }))} />
-                  <MultiSelect label="Status" options={statuses} selected={filters.status}
-                    onChange={(vals) => setFilters((f) => ({ ...f, status: vals }))} />
-                  <MultiSelect label="Recall" options={recalls} selected={filters.recall}
-                    onChange={(vals) => setFilters((f) => ({ ...f, recall: vals }))} />
                   <MultiSelect label="Import date" options={scanDates} selected={filters.scanDate}
                     onChange={(vals) => setFilters((f) => ({ ...f, scanDate: vals }))} />
                   <input className="lg-input" type="number" placeholder="Year min" value={filters.yearMin}
