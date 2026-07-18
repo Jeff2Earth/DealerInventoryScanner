@@ -271,7 +271,7 @@ function MultiSelect({ label, options, selected, onChange }) {
       {open && (
         <div style={{
           position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
-          background: "#14161A", border: "1px solid #3A3F49", borderRadius: 6,
+          background: "#2C313B", border: "1px solid #4C5261", borderRadius: 6,
           maxHeight: 230, overflowY: "auto", zIndex: 30, padding: 6,
         }}>
           {selected.length > 0 && (
@@ -470,18 +470,18 @@ export default function LotLedger() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#1B1D22", color: "#ECE7DC", fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#1E2027", color: "#ECE7DC", fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
         .lg-mono { font-family: 'IBM Plex Mono', monospace; }
         .lg-display { font-family: 'Space Grotesk', sans-serif; }
         .lg-input {
-          background: #14161A; border: 1px solid #3A3F49; color: #ECE7DC;
+          background: #2C313B; border: 1px solid #4C5261; color: #ECE7DC;
           border-radius: 6px; padding: 7px 10px; font-size: 13px; font-family: 'IBM Plex Sans', sans-serif;
           outline: none; width: 100%; box-sizing: border-box;
         }
-        .lg-input:focus { border-color: #F2A93B; }
-        .lg-input::placeholder { color: #6B6D70; }
+        .lg-input:focus { border-color: #FFC15E; }
+        .lg-input::placeholder { color: #8A8D92; }
         .lg-th { cursor: pointer; user-select: none; white-space: nowrap; }
         .lg-th:hover { color: #F2A93B; }
         .lg-row:hover { background: #2C303A !important; }
