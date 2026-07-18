@@ -659,7 +659,7 @@ export default function LotLedger() {
                     {[
                       ["stock", "Stock"], ["year", "Year"], ["make", "Make"], ["model", "Model"],
                       ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["certified", "Cert"],
-                      ["days", "Days"], ["vin", "VIN"],
+                      ["vin", "VIN"],
                       ["type", "Type"], ["recall", "Recall"],
                     ].map(([field, label]) => (
                       <th key={field} className="lg-th" onClick={() => toggleSort(field)}
@@ -680,7 +680,6 @@ export default function LotLedger() {
                       <td className="lg-mono" style={{ padding: "8px 10px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
                       <td style={{ padding: "8px 10px" }}>{r.color}</td>
                       <td style={{ padding: "8px 10px" }}>{r.certified ? "Yes" : ""}</td>
-                      <td className="lg-mono" style={{ padding: "8px 10px" }}>{r.days}</td>
                       <td className="lg-mono" style={{ padding: "8px 10px", fontSize: 11 }}>{r.vin}</td>
                       <td style={{ padding: "8px 10px", color: "#9A9C9E" }}>{r.type}</td>
                       <td style={{ padding: "8px 10px" }}>
