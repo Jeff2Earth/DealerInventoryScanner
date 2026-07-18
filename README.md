@@ -1,3 +1,4 @@
+
 # The Lot Ledger
 
 A CSV-based inventory search tool. Runs entirely in the browser — no backend,
