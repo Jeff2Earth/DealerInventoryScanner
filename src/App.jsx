@@ -271,7 +271,7 @@ function MultiSelect({ label, options, selected, onChange }) {
       {open && (
         <div style={{
           position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
-          background: "#2C313B", border: "1px solid #4C5261", borderRadius: 6,
+          background: "#3D4354", border: "1px solid #6B7280", borderRadius: 6,
           maxHeight: 230, overflowY: "auto", zIndex: 30, padding: 6,
         }}>
           {selected.length > 0 && (
@@ -476,11 +476,11 @@ export default function LotLedger() {
         .lg-mono { font-family: 'IBM Plex Mono', monospace; }
         .lg-display { font-family: 'Space Grotesk', sans-serif; }
         .lg-input {
-          background: #2C313B; border: 1px solid #4C5261; color: #ECE7DC;
+          background: #3D4354; border: 1px solid #6B7280; color: #ECE7DC;
           border-radius: 6px; padding: 7px 10px; font-size: 13px; font-family: 'IBM Plex Sans', sans-serif;
           outline: none; width: 100%; box-sizing: border-box;
         }
-        .lg-input:focus { border-color: #FFC15E; }
+        .lg-input:focus { border-color: #FFC15E; background: #454C60; }
         .lg-input::placeholder { color: #8A8D92; }
         .lg-th { cursor: pointer; user-select: none; white-space: nowrap; }
         .lg-th:hover { color: #F2A93B; }
