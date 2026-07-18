@@ -662,8 +662,8 @@ export default function LotLedger() {
                     {[
                       ["stock", "Stock"], ["year", "Year"], ["make", "Make"], ["model", "Model"],
                       ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["certified", "Cert"],
-                      ["days", "Days"], ["vin", "VIN"], ["scanDate", "Imported"],
-                      ["type", "Type"], ["status", "Status"], ["recall", "Recall"],
+                      ["days", "Days"], ["vin", "VIN"],
+                      ["type", "Type"], ["recall", "Recall"],
                     ].map(([field, label]) => (
                       <th key={field} className="lg-th" onClick={() => toggleSort(field)}
                         style={{ textAlign: "left", padding: "9px 10px", color: "#9A9C9E", fontWeight: 600, borderBottom: "1px solid #3A3F49" }}>
@@ -685,11 +685,7 @@ export default function LotLedger() {
                       <td style={{ padding: "8px 10px" }}>{r.certified ? "Yes" : ""}</td>
                       <td className="lg-mono" style={{ padding: "8px 10px" }}>{r.days}</td>
                       <td className="lg-mono" style={{ padding: "8px 10px", fontSize: 11 }}>{r.vin}</td>
-                      <td className="lg-mono" style={{ padding: "8px 10px", color: "#9A9C9E" }}>{r.scanDate}</td>
                       <td style={{ padding: "8px 10px", color: "#9A9C9E" }}>{r.type}</td>
-                      <td style={{ padding: "8px 10px" }}>
-                        <span style={{ color: statusColor(r.status), fontWeight: 600 }}>{r.status}</span>
-                      </td>
                       <td style={{ padding: "8px 10px" }}>
                         {r.recall && (
                           <span style={{ color: /open/i.test(r.recall) ? "#C1502E" : "#3FA796", fontWeight: 600 }}>{r.recall}</span>
