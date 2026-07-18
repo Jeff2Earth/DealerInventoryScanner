@@ -661,8 +661,9 @@ export default function LotLedger() {
                   <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 1 }}>
                     {[
                       ["stock", "Stock"], ["year", "Year"], ["make", "Make"], ["model", "Model"], ["type", "Type"],
-                      ["status", "Status"], ["recall", "Recall"], ["color", "Color"], ["odometer", "Odo"], ["vin", "VIN"],
+                      ["color", "Color"], ["odometer", "Odo"], ["vin", "VIN"],
                       ["days", "Days"], ["price", "Price"], ["certified", "Cert"], ["scanDate", "Imported"],
+                      ["status", "Status"], ["recall", "Recall"],
                     ].map(([field, label]) => (
                       <th key={field} className="lg-th" onClick={() => toggleSort(field)}
                         style={{ textAlign: "left", padding: "9px 10px", color: "#9A9C9E", fontWeight: 600, borderBottom: "1px solid #3A3F49" }}>
@@ -679,6 +680,13 @@ export default function LotLedger() {
                       <td style={{ padding: "8px 10px" }}>{r.make}</td>
                       <td style={{ padding: "8px 10px" }}>{r.model}<div style={{ color: "#6B6D70", fontSize: 11 }}>{r.desc}</div></td>
                       <td style={{ padding: "8px 10px", color: "#9A9C9E" }}>{r.type}</td>
+                      <td style={{ padding: "8px 10px" }}>{r.color}</td>
+                      <td className="lg-mono" style={{ padding: "8px 10px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
+                      <td className="lg-mono" style={{ padding: "8px 10px", fontSize: 11 }}>{r.vin}</td>
+                      <td className="lg-mono" style={{ padding: "8px 10px" }}>{r.days}</td>
+                      <td className="lg-mono" style={{ padding: "8px 10px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
+                      <td style={{ padding: "8px 10px" }}>{r.certified ? "Yes" : ""}</td>
+                      <td className="lg-mono" style={{ padding: "8px 10px", color: "#9A9C9E" }}>{r.scanDate}</td>
                       <td style={{ padding: "8px 10px" }}>
                         <span style={{ color: statusColor(r.status), fontWeight: 600 }}>{r.status}</span>
                       </td>
@@ -687,13 +695,6 @@ export default function LotLedger() {
                           <span style={{ color: /open/i.test(r.recall) ? "#C1502E" : "#3FA796", fontWeight: 600 }}>{r.recall}</span>
                         )}
                       </td>
-                      <td style={{ padding: "8px 10px" }}>{r.color}</td>
-                      <td className="lg-mono" style={{ padding: "8px 10px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
-                      <td className="lg-mono" style={{ padding: "8px 10px", fontSize: 11 }}>{r.vin}</td>
-                      <td className="lg-mono" style={{ padding: "8px 10px" }}>{r.days}</td>
-                      <td className="lg-mono" style={{ padding: "8px 10px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
-                      <td style={{ padding: "8px 10px" }}>{r.certified ? "Yes" : ""}</td>
-                      <td className="lg-mono" style={{ padding: "8px 10px", color: "#9A9C9E" }}>{r.scanDate}</td>
                     </tr>
                   ))}
                 </tbody>
