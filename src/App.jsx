@@ -177,6 +177,13 @@ function getField(row, name) {
 // Native pricing-export schema: Photos, Autowriter Description, Vehicle,
 // Stock #, VIN, Class, Certified, Deleted Date, Status, Recall Status, Body,
 // Color, Disp, Price / % Mkt, Last $ Change, Odometer.
+//
+// Ignored on purpose: Photos, Autowriter Description, Deleted Date, Status,
+// Disp — Status in particular is always blank in this export (verified
+// against a real pull), so it can't drive the status filter/badge the way
+// the legacy CSV format could. Certified and Days are kept: Certified is
+// read straight from the export, and Days is left null since this export
+// doesn't include a days-on-lot column (unlike the legacy CSV, which does).
 function normalizePricingRow(row) {
   const { year, make, model } = parseVehicleString(getField(row, "vehicle"));
   const classVal = (getField(row, "class") || "").toString();
@@ -188,11 +195,11 @@ function normalizePricingRow(row) {
     model,
     type: classVal.split(",")[0].trim() || "Other",
     desc: (getField(row, "body") || "").toString(),
-    status: (getField(row, "status") || "").toString().toUpperCase().trim(),
+    status: "", // not populated in this export — left blank rather than guessed
     color: (getField(row, "color") || "").toString(),
     odometer: parseNum(getField(row, "odometer")),
     vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
-    days: null,
+    days: null, // this export doesn't include a days-on-lot column
     price: parseMoney(getField(row, "price / % mkt")),
     certified: /^y/i.test(certifiedVal.trim()),
     recall: (getField(row, "recall status") || "").toString().trim(),
