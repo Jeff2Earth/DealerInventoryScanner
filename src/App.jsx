@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo } from "react";
+import * as XLSX from "xlsx";
 import { Upload, Search, Trash2, ChevronUp, ChevronDown, Loader2, AlertTriangle, X, Gauge, FileSpreadsheet, Download } from "lucide-react";
 
 // ---- design tokens ----
@@ -41,6 +42,15 @@ function readFileAsText(file) {
     r.onload = () => resolve(r.result);
     r.onerror = () => reject(new Error("Couldn't read this file from your device."));
     r.readAsText(file);
+  });
+}
+
+function readFileAsArrayBuffer(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(new Error("Couldn't read this file from your device."));
+    r.readAsArrayBuffer(file);
   });
 }
 
@@ -126,10 +136,9 @@ function classifyType(model) {
   return "Other";
 }
 
-function normalizeRow(r, scanDate) {
+function normalizeLegacyRow(r) {
   const model = (r.md ?? "").toString().trim();
   return {
-    scanDate: scanDate || "unknown",
     stock: r.s ?? "",
     year: r.y ?? "",
     make: (r.mk ?? "").toString().trim(),
@@ -143,7 +152,68 @@ function normalizeRow(r, scanDate) {
     days: parseNum(r.d),
     price: parseMoney(r.p),
     certified: !!r.ce,
+    recall: "",
   };
+}
+
+// "2024 Toyota Corolla LE" -> { year: 2024, make: "Toyota", model: "Corolla LE" }
+function parseVehicleString(vehicle) {
+  const s = (vehicle || "").toString().trim();
+  const m = s.match(/^(\d{4})\s+(\S+)\s+(.*)$/);
+  if (!m) return { year: null, make: "", model: s };
+  return { year: parseInt(m[1], 10), make: m[2], model: m[3].trim() };
+}
+
+function normalizeKey(k) {
+  return k.replace(/\s+/g, " ").trim().toLowerCase();
+}
+function getField(row, name) {
+  for (const k of Object.keys(row)) {
+    if (normalizeKey(k) === name) return row[k];
+  }
+  return undefined;
+}
+
+// Native pricing-export schema: Photos, Autowriter Description, Vehicle,
+// Stock #, VIN, Class, Certified, Deleted Date, Status, Recall Status, Body,
+// Color, Disp, Price / % Mkt, Last $ Change, Odometer.
+function normalizePricingRow(row) {
+  const { year, make, model } = parseVehicleString(getField(row, "vehicle"));
+  const classVal = (getField(row, "class") || "").toString();
+  const certifiedVal = (getField(row, "certified") || "").toString();
+  return {
+    stock: getField(row, "stock #") ?? "",
+    year,
+    make,
+    model,
+    type: classVal.split(",")[0].trim() || "Other",
+    desc: (getField(row, "body") || "").toString(),
+    status: (getField(row, "status") || "").toString().toUpperCase().trim(),
+    color: (getField(row, "color") || "").toString(),
+    odometer: parseNum(getField(row, "odometer")),
+    vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
+    days: null,
+    price: parseMoney(getField(row, "price / % mkt")),
+    certified: /^y/i.test(certifiedVal.trim()),
+    recall: (getField(row, "recall status") || "").toString().trim(),
+  };
+}
+
+// Reads a file (legacy report CSV, or a native .xlsx/.xls pricing export)
+// and returns a flat array of normalized vehicle records — no scanDate yet,
+// that's attached by the caller.
+async function extractRows(file) {
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".csv")) {
+    const text = await readFileAsText(file);
+    const raw = parseCSV(text).filter((r) => r.v);
+    return raw.map(normalizeLegacyRow);
+  }
+  const buf = await readFileAsArrayBuffer(file);
+  const wb = XLSX.read(buf, { type: "array", cellDates: true });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+  return json.map(normalizePricingRow).filter((r) => r.vin);
 }
 
 function csvEscape(v) {
@@ -153,11 +223,11 @@ function csvEscape(v) {
 }
 
 function recordsToCSV(records) {
-  const header = ["Stock/Order", "Year", "Make", "Model", "Type", "Model Desc", "Status", "Exterior Color", "Odometer", "VIN", "Days", "List Price", "Certified", "Scan Date"];
+  const header = ["Stock/Order", "Year", "Make", "Model", "Type", "Model Desc", "Status", "Recall Status", "Exterior Color", "Odometer", "VIN", "Days", "List Price", "Certified", "Scan Date"];
   const lines = [header.join(",")];
   for (const r of records) {
     lines.push([
-      r.stock, r.year, r.make, r.model, r.type, r.desc, r.status, r.color,
+      r.stock, r.year, r.make, r.model, r.type, r.desc, r.status, r.recall, r.color,
       r.odometer ?? "", r.vin, r.days ?? "", r.price ?? "", r.certified ? "Yes" : "", r.scanDate,
     ].map(csvEscape).join(","));
   }
@@ -251,6 +321,7 @@ export default function LotLedger() {
     model: [],
     type: [],
     status: [],
+    recall: [],
     scanDate: [],
     yearMin: "",
     yearMax: "",
@@ -264,17 +335,16 @@ export default function LotLedger() {
     const qid = file.name + "-" + Date.now();
     setQueue((q) => [...q, { id: qid, name: file.name, status: "reading" }]);
     try {
-      const text = await readFileAsText(file);
-      const rawRows = parseCSV(text).filter((r) => r.v);
+      const rawRows = await extractRows(file);
 
       if (rawRows.length === 0) {
         setQueue((q) =>
-          q.map((it) => (it.id === qid ? { ...it, status: "error", error: "No vehicle rows found — check the file has the expected columns (Stock/Order, Year, Make, Model, ... VIN, ...)" } : it))
+          q.map((it) => (it.id === qid ? { ...it, status: "error", error: "No vehicle rows found — check the file has the expected columns (VIN, Stock #/Stock-Order, etc.)" } : it))
         );
         return;
       }
 
-      const newRows = rawRows.map((r) => normalizeRow(r, scanDate));
+      const newRows = rawRows.map((r) => ({ ...r, scanDate }));
 
       setRecords((prev) => {
         // The batch-level wipe already happened in handleFiles, so every file
@@ -301,7 +371,7 @@ export default function LotLedger() {
   }
 
   function handleFiles(fileList) {
-    const files = Array.from(fileList).filter((f) => f.name.toLowerCase().endsWith(".csv") || f.type === "text/csv");
+    const files = Array.from(fileList).filter((f) => /\.(csv|xlsx|xls)$/i.test(f.name));
     if (files.length === 0) return;
     const scanDate = scanDateInput || new Date().toLocaleDateString();
     // Wipe once per import action — every CSV picked together in this batch
@@ -327,6 +397,7 @@ export default function LotLedger() {
   const models = useMemo(() => Array.from(new Set(records.map((r) => r.model).filter(Boolean))).sort(), [records]);
   const types = useMemo(() => Array.from(new Set(records.map((r) => r.type).filter(Boolean))).sort(), [records]);
   const statuses = useMemo(() => Array.from(new Set(records.map((r) => r.status).filter(Boolean))).sort(), [records]);
+  const recalls = useMemo(() => Array.from(new Set(records.map((r) => r.recall).filter(Boolean))).sort(), [records]);
   const scanDates = useMemo(() => Array.from(new Set(records.map((r) => r.scanDate).filter(Boolean))).sort().reverse(), [records]);
 
   const filtered = useMemo(() => {
@@ -344,6 +415,7 @@ export default function LotLedger() {
       if (filters.model.length && !filters.model.includes(r.model)) return false;
       if (filters.type.length && !filters.type.includes(r.type)) return false;
       if (filters.status.length && !filters.status.includes(r.status)) return false;
+      if (filters.recall.length && !filters.recall.includes(r.recall)) return false;
       if (filters.scanDate.length && !filters.scanDate.includes(r.scanDate)) return false;
       if (filters.yearMin && (!r.year || r.year < parseInt(filters.yearMin))) return false;
       if (filters.yearMax && (!r.year || r.year > parseInt(filters.yearMax))) return false;
@@ -455,13 +527,13 @@ export default function LotLedger() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv,text/csv"
+              accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               multiple
               style={{ display: "none" }}
               onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }}
             />
             <FileSpreadsheet size={20} color="#F2A93B" style={{ marginBottom: 6 }} />
-            <div style={{ fontSize: 13.5 }}>Drop today's inventory CSV here, or click to choose a file</div>
+            <div style={{ fontSize: 13.5 }}>Drop today's inventory CSV or Excel (.xlsx/.xls) export here, or click to choose a file</div>
             <div style={{ fontSize: 11.5, color: "#6B6D70", marginTop: 3 }}>
               Importing replaces whatever's currently loaded, and is saved automatically on this device — no need to re-import next time you visit.
             </div>
@@ -506,19 +578,28 @@ export default function LotLedger() {
                 <span>{totalCount} vehicles — imported {scanDates[0] || "recently"}</span>
                 <span>{filtered.length} matching current filters</span>
               </div>
-              <div style={{ display: "flex", height: 10, borderRadius: 5, overflow: "hidden" }}>
-                {Object.entries(statusCounts).map(([st, ct]) => (
-                  <div key={st} title={`${st}: ${ct}`} style={{ width: `${(ct / totalCount) * 100}%`, background: statusColor(st) }} />
-                ))}
-              </div>
-              <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8, fontSize: 11.5 }}>
-                {Object.entries(statusCounts).map(([st, ct]) => (
-                  <div key={st} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: 2, background: statusColor(st), display: "inline-block" }} />
-                    <span style={{ color: "#9A9C9E" }}>{st} ({ct})</span>
-                  </div>
-                ))}
-              </div>
+              {(() => {
+                const validStatusEntries = Object.entries(statusCounts).filter(([st]) => st);
+                if (validStatusEntries.length === 0) return null;
+                const validTotal = validStatusEntries.reduce((sum, [, ct]) => sum + ct, 0);
+                return (
+                  <>
+                    <div style={{ display: "flex", height: 10, borderRadius: 5, overflow: "hidden" }}>
+                      {validStatusEntries.map(([st, ct]) => (
+                        <div key={st} title={`${st}: ${ct}`} style={{ width: `${(ct / validTotal) * 100}%`, background: statusColor(st) }} />
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8, fontSize: 11.5 }}>
+                      {validStatusEntries.map(([st, ct]) => (
+                        <div key={st} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: 2, background: statusColor(st), display: "inline-block" }} />
+                          <span style={{ color: "#9A9C9E" }}>{st} ({ct})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
 
             {/* Filters */}
@@ -543,6 +624,8 @@ export default function LotLedger() {
                     onChange={(vals) => setFilters((f) => ({ ...f, type: vals }))} />
                   <MultiSelect label="Status" options={statuses} selected={filters.status}
                     onChange={(vals) => setFilters((f) => ({ ...f, status: vals }))} />
+                  <MultiSelect label="Recall" options={recalls} selected={filters.recall}
+                    onChange={(vals) => setFilters((f) => ({ ...f, recall: vals }))} />
                   <MultiSelect label="Import date" options={scanDates} selected={filters.scanDate}
                     onChange={(vals) => setFilters((f) => ({ ...f, scanDate: vals }))} />
                   <input className="lg-input" type="number" placeholder="Year min" value={filters.yearMin}
@@ -571,7 +654,7 @@ export default function LotLedger() {
                   <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 1 }}>
                     {[
                       ["stock", "Stock"], ["year", "Year"], ["make", "Make"], ["model", "Model"], ["type", "Type"],
-                      ["status", "Status"], ["color", "Color"], ["odometer", "Odo"], ["vin", "VIN"],
+                      ["status", "Status"], ["recall", "Recall"], ["color", "Color"], ["odometer", "Odo"], ["vin", "VIN"],
                       ["days", "Days"], ["price", "Price"], ["certified", "Cert"], ["scanDate", "Imported"],
                     ].map(([field, label]) => (
                       <th key={field} className="lg-th" onClick={() => toggleSort(field)}
@@ -591,6 +674,11 @@ export default function LotLedger() {
                       <td style={{ padding: "8px 10px", color: "#9A9C9E" }}>{r.type}</td>
                       <td style={{ padding: "8px 10px" }}>
                         <span style={{ color: statusColor(r.status), fontWeight: 600 }}>{r.status}</span>
+                      </td>
+                      <td style={{ padding: "8px 10px" }}>
+                        {r.recall && (
+                          <span style={{ color: /open/i.test(r.recall) ? "#C1502E" : "#3FA796", fontWeight: 600 }}>{r.recall}</span>
+                        )}
                       </td>
                       <td style={{ padding: "8px 10px" }}>{r.color}</td>
                       <td className="lg-mono" style={{ padding: "8px 10px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
