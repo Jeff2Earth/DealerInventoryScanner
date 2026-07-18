@@ -411,12 +411,15 @@ export default function LotLedger() {
     let out = records.filter((r) => {
       if (filters.search) {
         const s = filters.search.toLowerCase();
-        const hit =
-          r.stock.toString().toLowerCase().includes(s) ||
-          r.vin.toLowerCase().includes(s) ||
-          r.model.toLowerCase().includes(s) ||
-          r.desc.toLowerCase().includes(s);
-        if (!hit) return false;
+        const haystack = [
+          r.stock, r.year, r.make, r.model, r.type, r.desc, r.status, r.recall,
+          r.color, r.odometer, r.vin, r.days, r.price, r.certified ? "certified" : "",
+          r.scanDate,
+        ]
+          .filter((v) => v !== null && v !== undefined)
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(s)) return false;
       }
       if (filters.make.length && !filters.make.includes(r.make)) return false;
       if (filters.model.length && !filters.model.includes(r.model)) return false;
@@ -621,7 +624,7 @@ export default function LotLedger() {
               </div>
               {showFilters && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
-                  <input className="lg-input" placeholder="Stock #, VIN, or model" value={filters.search}
+                  <input className="lg-input" placeholder="Search anything (stock, VIN, model, color, price…)" value={filters.search}
                     onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))} />
                   <MultiSelect label="Make" options={makes} selected={filters.make}
                     onChange={(vals) => setFilters((f) => ({ ...f, make: vals }))} />
