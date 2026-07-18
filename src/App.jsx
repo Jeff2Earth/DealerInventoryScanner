@@ -217,7 +217,23 @@ function MultiSelect({ label, options, selected, onChange }) {
 }
 
 export default function LotLedger() {
-  const [records, setRecords] = useState([]);
+  const [records, setRecords] = useState(() => {
+    try {
+      const saved = localStorage.getItem("lot-ledger-records");
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  function saveRecords(next) {
+    setRecords(next);
+    try {
+      localStorage.setItem("lot-ledger-records", JSON.stringify(next));
+    } catch (e) {
+      console.error("Couldn't save to this browser's storage", e);
+    }
+  }
   const [queue, setQueue] = useState([]); // {name, status, error, count}
   const [dragOver, setDragOver] = useState(false);
   const [sortField, setSortField] = useState("price");
@@ -267,7 +283,13 @@ export default function LotLedger() {
         for (const row of newRows) {
           map.set(row.vin, row);
         }
-        return Array.from(map.values());
+        const next = Array.from(map.values());
+        try {
+          localStorage.setItem("lot-ledger-records", JSON.stringify(next));
+        } catch (e) {
+          console.error("Couldn't save to this browser's storage", e);
+        }
+        return next;
       });
 
       setQueue((q) =>
@@ -284,12 +306,12 @@ export default function LotLedger() {
     const scanDate = scanDateInput || new Date().toLocaleDateString();
     // Wipe once per import action — every CSV picked together in this batch
     // merges into one dataset; a later, separate import replaces it.
-    setRecords([]);
+    saveRecords([]);
     files.forEach((f) => processFile(f, scanDate));
   }
 
   function clearAll() {
-    setRecords([]);
+    saveRecords([]);
     setQueue([]);
     setConfirmingClear(false);
   }
@@ -398,7 +420,7 @@ export default function LotLedger() {
           </h1>
         </div>
         <div style={{ fontSize: 12.5, color: "#9A9C9E", marginTop: 4 }}>
-          Import today's inventory CSV to search it — re-import each time you open this page.
+          Import your inventory CSV to search it — it's remembered on this device until you import a new one.
         </div>
       </div>
 
@@ -441,7 +463,7 @@ export default function LotLedger() {
             <FileSpreadsheet size={20} color="#F2A93B" style={{ marginBottom: 6 }} />
             <div style={{ fontSize: 13.5 }}>Drop today's inventory CSV here, or click to choose a file</div>
             <div style={{ fontSize: 11.5, color: "#6B6D70", marginTop: 3 }}>
-              Importing replaces whatever's currently loaded. This data isn't saved between visits — export a copy below if you want to keep one.
+              Importing replaces whatever's currently loaded, and is saved automatically on this device — no need to re-import next time you visit.
             </div>
           </div>
         </div>
