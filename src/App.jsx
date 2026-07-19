@@ -585,14 +585,14 @@ export default function LotLedger() {
                     onChange={(vals) => setFilters((f) => ({ ...f, model: vals }))} />
                   <MultiSelect label="Type" options={types} selected={filters.type}
                     onChange={(vals) => setFilters((f) => ({ ...f, type: vals }))} />
+                  <input className="lg-input" type="number" placeholder="Max odometer" value={filters.odoMax}
+                    onChange={(e) => setFilters((f) => ({ ...f, odoMax: e.target.value }))} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <input className="lg-input" type="number" placeholder="Year min" value={filters.yearMin}
                       onChange={(e) => setFilters((f) => ({ ...f, yearMin: e.target.value }))} />
                     <input className="lg-input" type="number" placeholder="Year max" value={filters.yearMax}
                       onChange={(e) => setFilters((f) => ({ ...f, yearMax: e.target.value }))} />
                   </div>
-                  <input className="lg-input" type="number" placeholder="Max odometer" value={filters.odoMax}
-                    onChange={(e) => setFilters((f) => ({ ...f, odoMax: e.target.value }))} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <input className="lg-input" type="number" placeholder="Price min ($)" value={filters.priceMin}
                       onChange={(e) => setFilters((f) => ({ ...f, priceMin: e.target.value }))} />
