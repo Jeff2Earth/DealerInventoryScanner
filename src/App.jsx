@@ -505,9 +505,9 @@ export default function LotLedger() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#1E2027", color: "#ECE7DC", fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
+    <div style={{ height: "100vh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", background: "#1E2027", color: "#ECE7DC", fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
       <style>{`
-        html, body { overscroll-behavior-y: contain; }
+        html, body, #root { height: 100%; margin: 0; overscroll-behavior: none; }
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
         .lg-mono { font-family: 'IBM Plex Mono', monospace; }
         .lg-display { font-family: 'Space Grotesk', sans-serif; }
@@ -528,19 +528,19 @@ export default function LotLedger() {
       `}</style>
 
       {/* Header */}
-      <div style={{ borderBottom: "1px solid #3A3F49", padding: "20px 28px", textAlign: "center" }}>
+      <div style={{ borderBottom: "1px solid #3A3F49", padding: "12px 16px", textAlign: "center" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
           <Gauge size={22} color="#F2A93B" />
           <h1 className="lg-display" style={{ fontSize: 22, fontWeight: 700, margin: 0, letterSpacing: 0.2 }}>
             The Lot Ledger
           </h1>
         </div>
-        <div style={{ fontSize: 10.5, color: "#6B6D70", marginTop: 3 }}>
+        <div style={{ fontSize: 10.5, color: "#6B6D70", marginTop: 2 }}>
           designed by Jeff Patrick
         </div>
       </div>
 
-      <div style={{ padding: "22px 28px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
         {/* Upload zone */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div
@@ -551,7 +551,7 @@ export default function LotLedger() {
             style={{
               border: `1.5px dashed ${dragOver ? "#F2A93B" : "#3A3F49"}`,
               borderRadius: 10,
-              padding: "11px",
+              padding: "8px",
               textAlign: "center",
               cursor: "pointer",
               background: dragOver ? "#24272E" : "transparent",
@@ -609,24 +609,24 @@ export default function LotLedger() {
         {totalCount > 0 && (
           <>
             {/* Filters */}
-            <div style={{ background: "#24272E", borderRadius: 10, padding: "16px 18px 12px" }}>
+            <div style={{ background: "#24272E", borderRadius: 10, padding: "10px 12px 8px" }}>
               {/* General search */}
               <input
                 className="lg-input"
-                style={{ marginBottom: 12, padding: "6px 10px", textAlign: "center" }}
+                style={{ marginBottom: 8, padding: "6px 10px", textAlign: "center" }}
                 placeholder="Search anything (stock, VIN, model, color, price…)"
                 value={filters.search}
                 onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
               />
 
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: showFilters ? 12 : 0 }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: showFilters ? 8 : 0 }}>
                 <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 12, cursor: "pointer" }}>
                   {showFilters ? "Hide" : "Show"}
                 </button>
               </div>
 
               {showFilters && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10, alignItems: "start" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8, alignItems: "start" }}>
                   <MultiSelect label="Make" options={makes} selected={filters.make}
                     onChange={(vals) => setFilters((f) => ({ ...f, make: vals }))} />
                   <MultiSelect label="Model" options={models} selected={filters.model}
@@ -635,19 +635,19 @@ export default function LotLedger() {
                     onChange={(vals) => setFilters((f) => ({ ...f, type: vals }))} />
                   <input className="lg-input" type="number" placeholder="Max odometer" value={filters.odoMax}
                     onChange={(e) => setFilters((f) => ({ ...f, odoMax: e.target.value }))} />
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                     <input className="lg-input" type="number" placeholder="Year min" value={filters.yearMin}
                       onChange={(e) => setFilters((f) => ({ ...f, yearMin: e.target.value }))} />
                     <input className="lg-input" type="number" placeholder="Year max" value={filters.yearMax}
                       onChange={(e) => setFilters((f) => ({ ...f, yearMax: e.target.value }))} />
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                     <input className="lg-input" type="number" placeholder="Price min ($)" value={filters.priceMin}
                       onChange={(e) => setFilters((f) => ({ ...f, priceMin: e.target.value }))} />
                     <input className="lg-input" type="number" placeholder="Price max ($)" value={filters.priceMax}
                       onChange={(e) => setFilters((f) => ({ ...f, priceMax: e.target.value }))} />
                   </div>
-                  <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "center", gap: 26 }}>
+                  <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "center", gap: 26, marginTop: 2 }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13 }}>
                       <input type="checkbox" checked={filters.certifiedOnly}
                         onChange={(e) => setFilters((f) => ({ ...f, certifiedOnly: e.target.checked }))} />
@@ -673,7 +673,7 @@ export default function LotLedger() {
                       ["type", "Type"], ["days", "Days"], ["recall", "Recall"],
                     ].map(([field, label]) => (
                       <th key={field} className="lg-th" onClick={() => toggleSort(field)}
-                        style={{ textAlign: "left", padding: "9px 10px", color: "#9A9C9E", fontWeight: 600, borderBottom: "1px solid #3A3F49" }}>
+                        style={{ textAlign: "left", padding: "7px 8px", color: "#9A9C9E", fontWeight: 600, borderBottom: "1px solid #3A3F49" }}>
                         {label} <SortIcon field={field} />
                       </th>
                     ))}
@@ -682,19 +682,19 @@ export default function LotLedger() {
                 <tbody>
                   {filtered.map((r, i) => (
                     <tr key={r.vin + r.scanDate + i} className="lg-row" style={{ background: i % 2 ? "#22252B" : "#24272E" }}>
-                      <td className="lg-mono" style={{ padding: "8px 10px" }}>{r.stock}</td>
-                      <td style={{ padding: "8px 10px" }}>{r.year}</td>
-                      <td style={{ padding: "8px 10px" }}>{r.make}</td>
-                      <td style={{ padding: "8px 10px" }}>{r.model}<div style={{ color: "#6B6D70", fontSize: 11 }}>{r.desc}</div></td>
-                      <td className="lg-mono" style={{ padding: "8px 10px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
-                      <td className="lg-mono" style={{ padding: "8px 10px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
-                      <td style={{ padding: "8px 10px" }}>{r.color}</td>
-                      <td style={{ padding: "8px 10px", color: "#9A9C9E" }}>{r.drivetrain}</td>
-                      <td style={{ padding: "8px 10px" }}>{r.certified ? "Yes" : ""}</td>
-                      <td className="lg-mono" style={{ padding: "8px 10px", fontSize: 11 }}>{r.vin}</td>
-                      <td style={{ padding: "8px 10px", color: "#9A9C9E" }}>{r.type}</td>
-                      <td className="lg-mono" style={{ padding: "8px 10px", color: "#9A9C9E" }}>{r.days ?? ""}</td>
-                      <td style={{ padding: "8px 10px" }}>
+                      <td className="lg-mono" style={{ padding: "6px 8px" }}>{r.stock}</td>
+                      <td style={{ padding: "6px 8px" }}>{r.year}</td>
+                      <td style={{ padding: "6px 8px" }}>{r.make}</td>
+                      <td style={{ padding: "6px 8px" }}>{r.model}<div style={{ color: "#6B6D70", fontSize: 11 }}>{r.desc}</div></td>
+                      <td className="lg-mono" style={{ padding: "6px 8px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
+                      <td className="lg-mono" style={{ padding: "6px 8px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
+                      <td style={{ padding: "6px 8px" }}>{r.color}</td>
+                      <td style={{ padding: "6px 8px", color: "#9A9C9E" }}>{r.drivetrain}</td>
+                      <td style={{ padding: "6px 8px" }}>{r.certified ? "Yes" : ""}</td>
+                      <td className="lg-mono" style={{ padding: "6px 8px", fontSize: 11 }}>{r.vin}</td>
+                      <td style={{ padding: "6px 8px", color: "#9A9C9E" }}>{r.type}</td>
+                      <td className="lg-mono" style={{ padding: "6px 8px", color: "#9A9C9E" }}>{r.days ?? ""}</td>
+                      <td style={{ padding: "6px 8px" }}>
                         {r.recall && (
                           <span style={{ color: /open/i.test(r.recall) ? "#C1502E" : "#3FA796", fontWeight: 600 }}>{r.recall}</span>
                         )}
@@ -713,27 +713,6 @@ export default function LotLedger() {
                 {totalCount} vehicles — imported {scanDates[0] || "recently"}
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                {exportHref ? (
-                  <a
-                    href={exportHref}
-                    download={exportName}
-                    onClick={() => setTimeout(() => setExportHref(null), 300)}
-                    style={{
-                      background: "none", border: "1px solid #3FA796", color: "#3FA796", borderRadius: 6,
-                      padding: "7px 12px", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-                      textDecoration: "none",
-                    }}
-                  >
-                    <Download size={13} /> Click to save {exportName}
-                  </a>
-                ) : (
-                  <button onClick={exportCSV} style={{
-                    background: "none", border: "1px solid #3A3F49", color: "#3FA796", borderRadius: 6,
-                    padding: "7px 12px", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-                  }}>
-                    <Download size={13} /> Export to CSV
-                  </button>
-                )}
                 {confirmingClear ? (
                   <>
                     <span style={{ fontSize: 12, color: "#9A9C9E" }}>Clear everything?</span>
