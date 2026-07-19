@@ -528,7 +528,7 @@ export default function LotLedger() {
       `}</style>
 
       {/* Header */}
-      <div style={{ background: "#000000", padding: "22px 20px", textAlign: "center" }}>
+      <div style={{ background: "#000000", padding: "18px 28px", textAlign: "center" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
           <Gauge size={22} color="#E8C468" />
           <h1 className="lg-display" style={{ fontSize: 21, fontWeight: 700, margin: 0, letterSpacing: 2, color: "#E8C468", textTransform: "uppercase" }}>
@@ -540,7 +540,7 @@ export default function LotLedger() {
         </div>
       </div>
 
-      <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ padding: "10px 24px", display: "flex", flexDirection: "column", gap: 8 }}>
         {/* Upload zone */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div
