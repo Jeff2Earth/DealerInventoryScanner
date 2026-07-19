@@ -499,6 +499,17 @@ export default function LotLedger() {
       </div>
 
       <div style={{ padding: "22px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
+        {/* General search */}
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <input
+            className="lg-input"
+            style={{ maxWidth: 420, textAlign: "center" }}
+            placeholder="Search anything (stock, VIN, model, color, price…)"
+            value={filters.search}
+            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+          />
+        </div>
+
         {/* Upload zone */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div
@@ -524,9 +535,8 @@ export default function LotLedger() {
               style={{ display: "none" }}
               onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }}
             />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13.5, flexWrap: "wrap" }}>
-              <span>Drop today's inventory CSV or Excel (.xlsx/.xls)<br />export here, or <span style={{ fontWeight: 700, color: "#FFC15E" }}>CLICK</span> to choose a file</span>
-              <FileSpreadsheet size={20} color="#F2A93B" style={{ flexShrink: 0 }} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <FileSpreadsheet size={20} color="#F2A93B" />
             </div>
           </div>
         </div>
@@ -575,8 +585,6 @@ export default function LotLedger() {
               </div>
               {showFilters && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
-                  <input className="lg-input" placeholder="Search anything (stock, VIN, model, color, price…)" value={filters.search}
-                    onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))} />
                   <MultiSelect label="Make" options={makes} selected={filters.make}
                     onChange={(vals) => setFilters((f) => ({ ...f, make: vals }))} />
                   <MultiSelect label="Model" options={models} selected={filters.model}
