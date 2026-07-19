@@ -493,17 +493,6 @@ export default function LotLedger() {
       </div>
 
       <div style={{ padding: "22px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
-        {/* General search */}
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <input
-            className="lg-input"
-            style={{ maxWidth: 420, textAlign: "center" }}
-            placeholder="Search anything (stock, VIN, model, color, price…)"
-            value={filters.search}
-            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-          />
-        </div>
-
         {/* Upload zone */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div
@@ -571,6 +560,17 @@ export default function LotLedger() {
 
         {totalCount > 0 && (
           <>
+            {/* General search */}
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <input
+                className="lg-input"
+                style={{ maxWidth: 320, padding: "5px 10px", textAlign: "center" }}
+                placeholder="Search anything (stock, VIN, model, color, price…)"
+                value={filters.search}
+                onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+              />
+            </div>
+
             {/* Filters */}
             <div style={{ background: "#24272E", borderRadius: 10, padding: "16px 18px" }}>
               <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: showFilters ? 12 : 0 }}>
@@ -588,12 +588,6 @@ export default function LotLedger() {
                   <MultiSelect label="Type" options={types} selected={filters.type}
                     onChange={(vals) => setFilters((f) => ({ ...f, type: vals }))} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <input className="lg-input" type="number" placeholder="Price min ($)" value={filters.priceMin}
-                      onChange={(e) => setFilters((f) => ({ ...f, priceMin: e.target.value }))} />
-                    <input className="lg-input" type="number" placeholder="Price max ($)" value={filters.priceMax}
-                      onChange={(e) => setFilters((f) => ({ ...f, priceMax: e.target.value }))} />
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <input className="lg-input" type="number" placeholder="Year min" value={filters.yearMin}
                       onChange={(e) => setFilters((f) => ({ ...f, yearMin: e.target.value }))} />
                     <input className="lg-input" type="number" placeholder="Year max" value={filters.yearMax}
@@ -601,6 +595,12 @@ export default function LotLedger() {
                   </div>
                   <input className="lg-input" type="number" placeholder="Max odometer" value={filters.odoMax}
                     onChange={(e) => setFilters((f) => ({ ...f, odoMax: e.target.value }))} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <input className="lg-input" type="number" placeholder="Price min ($)" value={filters.priceMin}
+                      onChange={(e) => setFilters((f) => ({ ...f, priceMin: e.target.value }))} />
+                    <input className="lg-input" type="number" placeholder="Price max ($)" value={filters.priceMax}
+                      onChange={(e) => setFilters((f) => ({ ...f, priceMax: e.target.value }))} />
+                  </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13 }}>
                       <input type="checkbox" checked={filters.certifiedOnly}
