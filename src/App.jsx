@@ -261,7 +261,7 @@ function MultiSelect({ label, options, selected, onChange }) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="lg-input"
-        style={{ textAlign: "left", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", color: selected.length ? "#ECE7DC" : "#6B6D70" }}
+        style={{ textAlign: "left", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", color: selected.length ? "#ECE7DC" : "#B4B8BF" }}
       >
         <span>{label}{selected.length > 0 ? ` (${selected.length})` : ""}</span>
         <ChevronDown size={13} style={{ opacity: 0.6, flexShrink: 0 }} />
@@ -469,7 +469,7 @@ export default function LotLedger() {
           outline: none; width: 100%; box-sizing: border-box;
         }
         .lg-input:focus { border-color: #FFC15E; background: #454C60; }
-        .lg-input::placeholder { color: #8A8D92; }
+        .lg-input::placeholder { color: #B4B8BF; }
         .lg-th { cursor: pointer; user-select: none; white-space: nowrap; }
         .lg-th:hover { color: #F2A93B; }
         .lg-row:hover { background: #2C303A !important; }
