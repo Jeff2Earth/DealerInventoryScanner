@@ -560,19 +560,17 @@ export default function LotLedger() {
 
         {totalCount > 0 && (
           <>
-            {/* General search */}
-            <div style={{ display: "flex", justifyContent: "center" }}>
+            {/* Filters */}
+            <div style={{ background: "#24272E", borderRadius: 10, padding: "16px 18px" }}>
+              {/* General search */}
               <input
                 className="lg-input"
-                style={{ maxWidth: 320, padding: "5px 10px", textAlign: "center" }}
+                style={{ marginBottom: 12, padding: "6px 10px", textAlign: "center" }}
                 placeholder="Search anything (stock, VIN, model, color, price…)"
                 value={filters.search}
                 onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
               />
-            </div>
 
-            {/* Filters */}
-            <div style={{ background: "#24272E", borderRadius: 10, padding: "16px 18px" }}>
               <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: showFilters ? 12 : 0 }}>
                 <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 12, cursor: "pointer" }}>
                   {showFilters ? "Hide" : "Show"}
