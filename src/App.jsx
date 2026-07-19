@@ -509,7 +509,7 @@ export default function LotLedger() {
             style={{
               border: `1.5px dashed ${dragOver ? "#F2A93B" : "#3A3F49"}`,
               borderRadius: 10,
-              padding: "22px",
+              padding: "11px",
               textAlign: "center",
               cursor: "pointer",
               background: dragOver ? "#24272E" : "transparent",
@@ -524,10 +524,9 @@ export default function LotLedger() {
               style={{ display: "none" }}
               onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }}
             />
-            <FileSpreadsheet size={20} color="#F2A93B" style={{ marginBottom: 6 }} />
-            <div style={{ fontSize: 13.5 }}>Drop today's inventory CSV or Excel (.xlsx/.xls) export here, or click to choose a file</div>
-            <div style={{ fontSize: 11.5, color: "#6B6D70", marginTop: 3 }}>
-              Importing replaces whatever's currently loaded, and is saved automatically on this device — no need to re-import next time you visit.
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13.5 }}>
+              <FileSpreadsheet size={20} color="#F2A93B" />
+              Drop today's inventory CSV or Excel (.xlsx/.xls) export here, or click to choose a file
             </div>
           </div>
         </div>
