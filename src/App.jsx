@@ -492,7 +492,7 @@ export default function LotLedger() {
         </div>
       </div>
 
-      <div style={{ padding: "22px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ padding: "22px 28px", display: "flex", flexDirection: "column", gap: 12 }}>
         {/* Upload zone */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div
@@ -561,7 +561,7 @@ export default function LotLedger() {
         {totalCount > 0 && (
           <>
             {/* Filters */}
-            <div style={{ background: "#24272E", borderRadius: 10, padding: "16px 18px" }}>
+            <div style={{ background: "#24272E", borderRadius: 10, padding: "16px 18px 12px" }}>
               {/* General search */}
               <input
                 className="lg-input"
@@ -578,7 +578,7 @@ export default function LotLedger() {
               </div>
 
               {showFilters && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10, alignItems: "start" }}>
                   <MultiSelect label="Make" options={makes} selected={filters.make}
                     onChange={(vals) => setFilters((f) => ({ ...f, make: vals }))} />
                   <MultiSelect label="Model" options={models} selected={filters.model}
@@ -599,13 +599,13 @@ export default function LotLedger() {
                     <input className="lg-input" type="number" placeholder="Price max ($)" value={filters.priceMax}
                       onChange={(e) => setFilters((f) => ({ ...f, priceMax: e.target.value }))} />
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13 }}>
                       <input type="checkbox" checked={filters.certifiedOnly}
                         onChange={(e) => setFilters((f) => ({ ...f, certifiedOnly: e.target.checked }))} />
                       Certified only
                     </label>
-                    <span className="lg-input" style={{ width: "auto", padding: "5px 14px", fontSize: 12.5, color: "#9A9C9E" }}>
+                    <span style={{ fontSize: 12.5, color: "#9A9C9E" }}>
                       {filtered.length}/{totalCount} vehicles
                     </span>
                   </div>
