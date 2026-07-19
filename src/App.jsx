@@ -666,7 +666,7 @@ export default function LotLedger() {
             </div>
 
             {/* Table */}
-            <div style={{ background: "#24272E", borderRadius: 10, overflowX: "auto" }}>
+            <div style={{ background: "#24272E", borderRadius: 10, overflowX: "auto", touchAction: "pan-x" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
                 <thead>
                   <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 1 }}>
