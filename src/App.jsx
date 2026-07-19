@@ -765,7 +765,7 @@ export default function LotLedger() {
             top: 0,
             bottom: 0,
             [side]: 0,
-            width: 24,
+            width: 36,
             zIndex: 40,
             background: "transparent",
             touchAction: "none",
