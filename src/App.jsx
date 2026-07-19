@@ -524,9 +524,10 @@ export default function LotLedger() {
               style={{ display: "none" }}
               onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }}
             />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13.5 }}>
-              <FileSpreadsheet size={20} color="#F2A93B" />
-              Drop today's inventory CSV or Excel (.xlsx/.xls) export here, or click to choose a file
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13.5, flexWrap: "wrap" }}>
+              <span>Drop today's inventory CSV or Excel (.xlsx/.xls) export here, or click</span>
+              <FileSpreadsheet size={20} color="#F2A93B" style={{ flexShrink: 0 }} />
+              <span>to choose a file</span>
             </div>
           </div>
         </div>
