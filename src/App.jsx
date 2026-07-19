@@ -571,10 +571,6 @@ export default function LotLedger() {
           <>
             {/* Status gauge */}
             <div style={{ background: "#24272E", borderRadius: 10, padding: "14px 18px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#9A9C9E", marginBottom: 8 }}>
-                <span>{totalCount} vehicles — imported {scanDates[0] || "recently"}</span>
-                <span>{filtered.length} matching current filters</span>
-              </div>
               {(() => {
                 const validStatusEntries = Object.entries(statusCounts).filter(([st]) => st);
                 if (validStatusEntries.length === 0) return null;
@@ -685,7 +681,11 @@ export default function LotLedger() {
               )}
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 12, color: "#9A9C9E" }}>
+                {totalCount} vehicles — imported {scanDates[0] || "recently"}
+              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               {exportHref ? (
                 <a
                   href={exportHref}
@@ -732,6 +732,7 @@ export default function LotLedger() {
                   <Trash2 size={13} /> Clear current import
                 </button>
               )}
+              </div>
             </div>
           </>
         )}
