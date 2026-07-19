@@ -206,6 +206,43 @@ function normalizePricingRow(row) {
   };
 }
 
+// Days on lot, from an Inventory Date that may come through as a JS Date
+// (XLSX.read with cellDates:true) or as a "MM/DD/YYYY" string.
+function daysSince(dateVal) {
+  if (!dateVal) return null;
+  const d = dateVal instanceof Date ? dateVal : new Date(dateVal);
+  if (isNaN(d.getTime())) return null;
+  const start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((today - start) / 86400000);
+}
+
+// "Pricing View" export schema (wider report, 46 columns) — includes real
+// Inventory Date and Recall Status Icon Small, which the plain pricing
+// export above doesn't have. Detected by the presence of "Inventory Date".
+function normalizePricingViewRow(row) {
+  const { year, make, model } = parseVehicleString(getField(row, "vehicle"));
+  const classVal = (getField(row, "class") || "").toString();
+  const certifiedVal = (getField(row, "certified") || "").toString();
+  return {
+    stock: getField(row, "stock #") ?? "",
+    year,
+    make,
+    model,
+    type: classVal.split(",")[0].trim() || "Other",
+    desc: (getField(row, "body") || "").toString(),
+    status: "",
+    color: (getField(row, "color") || "").toString(),
+    odometer: parseNum(getField(row, "odometer")),
+    vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
+    days: daysSince(getField(row, "inventory date")),
+    price: parseMoney(getField(row, "price")),
+    certified: /^y/i.test(certifiedVal.trim()),
+    recall: (getField(row, "recall status icon small") || "").toString().trim(),
+  };
+}
+
 // Reads a file (legacy report CSV, or a native .xlsx/.xls pricing export)
 // and returns a flat array of normalized vehicle records — no scanDate yet,
 // that's attached by the caller.
@@ -220,6 +257,9 @@ async function extractRows(file) {
   const wb = XLSX.read(buf, { type: "array", cellDates: true });
   const sheet = wb.Sheets[wb.SheetNames[0]];
   const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+  if (json.length && getField(json[0], "inventory date") !== undefined) {
+    return json.map(normalizePricingViewRow).filter((r) => r.vin);
+  }
   return json.map(normalizePricingRow).filter((r) => r.vin);
 }
 
@@ -529,9 +569,9 @@ export default function LotLedger() {
         </div>
 
         {/* Processing queue */}
-        {queue.length > 0 && (
+        {queue.some((it) => it.status !== "done") && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {queue.map((it) => (
+            {queue.filter((it) => it.status !== "done").map((it) => (
               <div key={it.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, background: "#24272E", borderRadius: 6, padding: "7px 12px" }}>
                 {it.status === "reading" ? (
                   <Loader2 size={14} className="lg-mono" style={{ animation: "spin 1s linear infinite" }} />
@@ -622,7 +662,7 @@ export default function LotLedger() {
                       ["stock", "Stock"], ["year", "Year"], ["make", "Make"], ["model", "Model"],
                       ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["certified", "Cert"],
                       ["vin", "VIN"],
-                      ["type", "Type"], ["recall", "Recall"],
+                      ["type", "Type"], ["days", "Days"], ["recall", "Recall"],
                     ].map(([field, label]) => (
                       <th key={field} className="lg-th" onClick={() => toggleSort(field)}
                         style={{ textAlign: "left", padding: "9px 10px", color: "#9A9C9E", fontWeight: 600, borderBottom: "1px solid #3A3F49" }}>
@@ -644,6 +684,7 @@ export default function LotLedger() {
                       <td style={{ padding: "8px 10px" }}>{r.certified ? "Yes" : ""}</td>
                       <td className="lg-mono" style={{ padding: "8px 10px", fontSize: 11 }}>{r.vin}</td>
                       <td style={{ padding: "8px 10px", color: "#9A9C9E" }}>{r.type}</td>
+                      <td className="lg-mono" style={{ padding: "8px 10px", color: "#9A9C9E" }}>{r.days ?? ""}</td>
                       <td style={{ padding: "8px 10px" }}>
                         {r.recall && (
                           <span style={{ color: /open/i.test(r.recall) ? "#C1502E" : "#3FA796", fontWeight: 600 }}>{r.recall}</span>
