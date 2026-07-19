@@ -447,11 +447,6 @@ export default function LotLedger() {
     return out;
   }, [records, filters, sortField, sortDir]);
 
-  const statusCounts = useMemo(() => {
-    const c = {};
-    for (const r of records) c[r.status] = (c[r.status] || 0) + 1;
-    return c;
-  }, [records]);
   const totalCount = records.length;
 
   function toggleSort(field) {
@@ -569,35 +564,6 @@ export default function LotLedger() {
 
         {totalCount > 0 && (
           <>
-            {/* Status gauge */}
-            <div style={{ background: "#24272E", borderRadius: 10, padding: "14px 18px" }}>
-              <div style={{ fontSize: 13, color: "#ECE7DC", marginBottom: 8 }}>
-                {filtered.length}/{totalCount} vehicles
-              </div>
-              {(() => {
-                const validStatusEntries = Object.entries(statusCounts).filter(([st]) => st);
-                if (validStatusEntries.length === 0) return null;
-                const validTotal = validStatusEntries.reduce((sum, [, ct]) => sum + ct, 0);
-                return (
-                  <>
-                    <div style={{ display: "flex", height: 10, borderRadius: 5, overflow: "hidden" }}>
-                      {validStatusEntries.map(([st, ct]) => (
-                        <div key={st} title={`${st}: ${ct}`} style={{ width: `${(ct / validTotal) * 100}%`, background: statusColor(st) }} />
-                      ))}
-                    </div>
-                    <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8, fontSize: 11.5 }}>
-                      {validStatusEntries.map(([st, ct]) => (
-                        <div key={st} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                          <span style={{ width: 8, height: 8, borderRadius: 2, background: statusColor(st), display: "inline-block" }} />
-                          <span style={{ color: "#9A9C9E" }}>{st} ({ct})</span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-
             {/* Filters */}
             <div style={{ background: "#24272E", borderRadius: 10, padding: "16px 18px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showFilters ? 12 : 0 }}>
@@ -636,7 +602,7 @@ export default function LotLedger() {
                     Certified only
                   </label>
                   <span style={{ display: "flex", alignItems: "center", fontSize: 13, color: "#9A9C9E" }}>
-                    {totalCount} vehicles
+                    {filtered.length}/{totalCount} vehicles
                   </span>
                 </div>
               )}
