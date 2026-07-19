@@ -528,15 +528,15 @@ export default function LotLedger() {
       `}</style>
 
       {/* Header */}
-      <div style={{ borderBottom: "1px solid #3A3F49", padding: "12px 16px", textAlign: "center" }}>
+      <div style={{ background: "#000000", padding: "22px 20px", textAlign: "center" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-          <Gauge size={22} color="#F2A93B" />
-          <h1 className="lg-display" style={{ fontSize: 22, fontWeight: 700, margin: 0, letterSpacing: 0.2 }}>
+          <Gauge size={22} color="#E8C468" />
+          <h1 className="lg-display" style={{ fontSize: 21, fontWeight: 700, margin: 0, letterSpacing: 2, color: "#E8C468", textTransform: "uppercase" }}>
             The Lot Ledger
           </h1>
         </div>
-        <div style={{ fontSize: 10.5, color: "#6B6D70", marginTop: 2 }}>
-          designed by Jeff Patrick
+        <div style={{ fontSize: 11, color: "#7A7565", marginTop: 6 }}>
+          designed by <b style={{ color: "#FFE29A" }}>Jeff Patrick</b>
         </div>
       </div>
 
