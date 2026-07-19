@@ -30,6 +30,7 @@ function parseMoney(v) {
   const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
   return isNaN(n) ? null : n;
 }
+
 function parseNum(v) {
   if (v === null || v === undefined || v === "") return null;
   const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
@@ -63,7 +64,6 @@ function parseCSV(text) {
   let inQuotes = false;
   const pushField = () => { row.push(field); field = ""; };
   const pushRow = () => { pushField(); rows.push(row); row = []; };
-
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     if (inQuotes) {
@@ -81,7 +81,6 @@ function parseCSV(text) {
   }
   if (field !== "" || row.length > 0) pushRow();
   if (rows.length === 0) return [];
-
   const header = rows[0].map((h) => h.trim().toLowerCase());
   const idx = (name) => header.indexOf(name);
   const cols = {
@@ -98,7 +97,6 @@ function parseCSV(text) {
     price: idx("list price") >= 0 ? idx("list price") : idx("price"),
     certified: idx("certified"),
   };
-
   return rows.slice(1)
     .filter((r) => r.some((v) => v && v.trim() !== ""))
     .map((r) => ({
@@ -128,6 +126,7 @@ const TYPE_RULES = [
   [/SIERRA|SILVERADO|^TACOMA|^TITAN$|^TUNDRA|^COLORADO|F-150|GLADIATOR|MAVERICK/i, "Truck"],
   [/^RAV4|^ROGUE|^SANTA FE|SPORTAGE|TERRAIN|^TUCSON|WRANGLER|^XC|^4RUNNER|ATLAS|BLAZER|COROLLA CROS|CR-V|CROSSTREK|^CX-|EXPLORER|GRAND CHEROKEE|GRAND PTM|^GX |KONA|^MDX|OUTBACK|PALISADE|PILOT|^HIGHLANDER/i, "SUV"],
 ];
+
 function classifyType(model) {
   const m = (model || "").toUpperCase();
   for (const [re, type] of TYPE_RULES) {
@@ -167,6 +166,7 @@ function parseVehicleString(vehicle) {
 function normalizeKey(k) {
   return k.replace(/\s+/g, " ").trim().toLowerCase();
 }
+
 function getField(row, name) {
   for (const k of Object.keys(row)) {
     if (normalizeKey(k) === name) return row[k];
@@ -244,12 +244,10 @@ function recordsToCSV(records) {
 function MultiSelect({ label, options, selected, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-
   function toggleValue(v) {
     if (selected.includes(v)) onChange(selected.filter((x) => x !== v));
     else onChange([...selected, v]);
   }
-
   return (
     <div
       ref={ref}
@@ -311,6 +309,7 @@ export default function LotLedger() {
       console.error("Couldn't save to this browser's storage", e);
     }
   }
+
   const [queue, setQueue] = useState([]); // {name, status, error, count}
   const [dragOver, setDragOver] = useState(false);
   const [sortField, setSortField] = useState("price");
@@ -342,16 +341,13 @@ export default function LotLedger() {
     setQueue((q) => [...q, { id: qid, name: file.name, status: "reading" }]);
     try {
       const rawRows = await extractRows(file);
-
       if (rawRows.length === 0) {
         setQueue((q) =>
           q.map((it) => (it.id === qid ? { ...it, status: "error", error: "No vehicle rows found — check the file has the expected columns (VIN, Stock #/Stock-Order, etc.)" } : it))
         );
         return;
       }
-
       const newRows = rawRows.map((r) => ({ ...r, scanDate }));
-
       setRecords((prev) => {
         // The batch-level wipe already happened in handleFiles, so every file
         // selected together in one import simply merges in by VIN.
@@ -367,7 +363,6 @@ export default function LotLedger() {
         }
         return next;
       });
-
       setQueue((q) =>
         q.map((it) => (it.id === qid ? { ...it, status: "done", count: newRows.length } : it))
       );
@@ -432,7 +427,6 @@ export default function LotLedger() {
       if (filters.certifiedOnly && !r.certified) return false;
       return true;
     });
-
     out.sort((a, b) => {
       let av = a[sortField];
       let bv = b[sortField];
@@ -575,17 +569,12 @@ export default function LotLedger() {
           <>
             {/* Filters */}
             <div style={{ background: "#24272E", borderRadius: 10, padding: "16px 18px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", marginBottom: showFilters ? 12 : 0 }}>
-                <div className="lg-display" style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
-                  <Search size={14} color="#F2A93B" /> Search & filter
-                </div>
-                <div className="lg-input" style={{ width: "auto", padding: "5px 14px", fontSize: 12.5, color: "#9A9C9E", justifySelf: "center" }}>
-                  {filtered.length}/{totalCount} vehicles
-                </div>
-                <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 12, cursor: "pointer", justifySelf: "end" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: showFilters ? 12 : 0 }}>
+                <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 12, cursor: "pointer" }}>
                   {showFilters ? "Hide" : "Show"}
                 </button>
               </div>
+
               {showFilters && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
                   <MultiSelect label="Make" options={makes} selected={filters.make}
@@ -594,27 +583,30 @@ export default function LotLedger() {
                     onChange={(vals) => setFilters((f) => ({ ...f, model: vals }))} />
                   <MultiSelect label="Type" options={types} selected={filters.type}
                     onChange={(vals) => setFilters((f) => ({ ...f, type: vals }))} />
-                  <MultiSelect label="Import date" options={scanDates} selected={filters.scanDate}
-                    onChange={(vals) => setFilters((f) => ({ ...f, scanDate: vals }))} />
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <input className="lg-input" type="number" placeholder="Year min" value={filters.yearMin}
-                      onChange={(e) => setFilters((f) => ({ ...f, yearMin: e.target.value }))} />
-                    <input className="lg-input" type="number" placeholder="Year max" value={filters.yearMax}
-                      onChange={(e) => setFilters((f) => ({ ...f, yearMax: e.target.value }))} />
-                  </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <input className="lg-input" type="number" placeholder="Price min ($)" value={filters.priceMin}
                       onChange={(e) => setFilters((f) => ({ ...f, priceMin: e.target.value }))} />
                     <input className="lg-input" type="number" placeholder="Price max ($)" value={filters.priceMax}
                       onChange={(e) => setFilters((f) => ({ ...f, priceMax: e.target.value }))} />
                   </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <input className="lg-input" type="number" placeholder="Year min" value={filters.yearMin}
+                      onChange={(e) => setFilters((f) => ({ ...f, yearMin: e.target.value }))} />
+                    <input className="lg-input" type="number" placeholder="Year max" value={filters.yearMax}
+                      onChange={(e) => setFilters((f) => ({ ...f, yearMax: e.target.value }))} />
+                  </div>
                   <input className="lg-input" type="number" placeholder="Max odometer" value={filters.odoMax}
                     onChange={(e) => setFilters((f) => ({ ...f, odoMax: e.target.value }))} />
-                  <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13 }}>
-                    <input type="checkbox" checked={filters.certifiedOnly}
-                      onChange={(e) => setFilters((f) => ({ ...f, certifiedOnly: e.target.checked }))} />
-                    Certified only
-                  </label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13 }}>
+                      <input type="checkbox" checked={filters.certifiedOnly}
+                        onChange={(e) => setFilters((f) => ({ ...f, certifiedOnly: e.target.checked }))} />
+                      Certified only
+                    </label>
+                    <span className="lg-input" style={{ width: "auto", padding: "5px 14px", fontSize: 12.5, color: "#9A9C9E" }}>
+                      {filtered.length}/{totalCount} vehicles
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
@@ -669,52 +661,51 @@ export default function LotLedger() {
                 {totalCount} vehicles — imported {scanDates[0] || "recently"}
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              {exportHref ? (
-                <a
-                  href={exportHref}
-                  download={exportName}
-                  onClick={() => setTimeout(() => setExportHref(null), 300)}
-                  style={{
-                    background: "none", border: "1px solid #3FA796", color: "#3FA796", borderRadius: 6,
+                {exportHref ? (
+                  <a
+                    href={exportHref}
+                    download={exportName}
+                    onClick={() => setTimeout(() => setExportHref(null), 300)}
+                    style={{
+                      background: "none", border: "1px solid #3FA796", color: "#3FA796", borderRadius: 6,
+                      padding: "7px 12px", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+                      textDecoration: "none",
+                    }}
+                  >
+                    <Download size={13} /> Click to save {exportName}
+                  </a>
+                ) : (
+                  <button onClick={exportCSV} style={{
+                    background: "none", border: "1px solid #3A3F49", color: "#3FA796", borderRadius: 6,
                     padding: "7px 12px", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-                    textDecoration: "none",
-                  }}
-                >
-                  <Download size={13} /> Click to save {exportName}
-                </a>
-              ) : (
-                <button onClick={exportCSV} style={{
-                  background: "none", border: "1px solid #3A3F49", color: "#3FA796", borderRadius: 6,
-                  padding: "7px 12px", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-                }}>
-                  <Download size={13} /> Export to CSV
-                </button>
-              )}
-
-              {confirmingClear ? (
-                <>
-                  <span style={{ fontSize: 12, color: "#9A9C9E" }}>Clear everything?</span>
-                  <button onClick={clearAll} style={{
-                    background: "#C1502E", border: "1px solid #C1502E", color: "#ECE7DC", borderRadius: 6,
-                    padding: "7px 12px", fontSize: 12, cursor: "pointer",
                   }}>
-                    Yes, clear it
+                    <Download size={13} /> Export to CSV
                   </button>
-                  <button onClick={() => setConfirmingClear(false)} style={{
-                    background: "none", border: "1px solid #3A3F49", color: "#9A9C9E", borderRadius: 6,
-                    padding: "7px 12px", fontSize: 12, cursor: "pointer",
+                )}
+                {confirmingClear ? (
+                  <>
+                    <span style={{ fontSize: 12, color: "#9A9C9E" }}>Clear everything?</span>
+                    <button onClick={clearAll} style={{
+                      background: "#C1502E", border: "1px solid #C1502E", color: "#ECE7DC", borderRadius: 6,
+                      padding: "7px 12px", fontSize: 12, cursor: "pointer",
+                    }}>
+                      Yes, clear it
+                    </button>
+                    <button onClick={() => setConfirmingClear(false)} style={{
+                      background: "none", border: "1px solid #3A3F49", color: "#9A9C9E", borderRadius: 6,
+                      padding: "7px 12px", fontSize: 12, cursor: "pointer",
+                    }}>
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button onClick={() => setConfirmingClear(true)} style={{
+                    background: "none", border: "1px solid #3A3F49", color: "#C1502E", borderRadius: 6,
+                    padding: "7px 12px", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
                   }}>
-                    Cancel
+                    <Trash2 size={13} /> Clear current import
                   </button>
-                </>
-              ) : (
-                <button onClick={() => setConfirmingClear(true)} style={{
-                  background: "none", border: "1px solid #3A3F49", color: "#C1502E", borderRadius: 6,
-                  padding: "7px 12px", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-                }}>
-                  <Trash2 size={13} /> Clear current import
-                </button>
-              )}
+                )}
               </div>
             </div>
           </>
