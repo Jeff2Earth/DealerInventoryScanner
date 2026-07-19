@@ -152,6 +152,7 @@ function normalizeLegacyRow(r) {
     price: parseMoney(r.p),
     certified: !!r.ce,
     recall: "",
+    drivetrain: "",
   };
 }
 
@@ -203,6 +204,7 @@ function normalizePricingRow(row) {
     price: parseMoney(getField(row, "price / % mkt")),
     certified: /^y/i.test(certifiedVal.trim()),
     recall: (getField(row, "recall status") || "").toString().trim(),
+    drivetrain: "",
   };
 }
 
@@ -225,6 +227,10 @@ function normalizePricingViewRow(row) {
   const { year, make, model } = parseVehicleString(getField(row, "vehicle"));
   const classVal = (getField(row, "class") || "").toString();
   const certifiedVal = (getField(row, "certified") || "").toString();
+  const exteriorColor = (getField(row, "color") || "").toString().trim();
+  const interiorColor = (getField(row, "interior color") || "").toString().trim();
+  const engine = (getField(row, "engine") || "").toString().trim();
+  const drivetrainType = (getField(row, "drivetrain type") || "").toString().trim();
   return {
     stock: getField(row, "stock #") ?? "",
     year,
@@ -233,13 +239,14 @@ function normalizePricingViewRow(row) {
     type: classVal.split(",")[0].trim() || "Other",
     desc: (getField(row, "body") || "").toString(),
     status: "",
-    color: (getField(row, "color") || "").toString(),
+    color: interiorColor ? `${exteriorColor} / ${interiorColor}` : exteriorColor,
     odometer: parseNum(getField(row, "odometer")),
     vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
     days: daysSince(getField(row, "inventory date")),
     price: parseMoney(getField(row, "price")),
     certified: /^y/i.test(certifiedVal.trim()),
     recall: (getField(row, "recall status icon small") || "").toString().trim(),
+    drivetrain: engine && drivetrainType ? `${engine}/${drivetrainType}` : (engine || drivetrainType),
   };
 }
 
@@ -445,7 +452,7 @@ export default function LotLedger() {
         const s = filters.search.toLowerCase();
         const haystack = [
           r.stock, r.year, r.make, r.model, r.type, r.desc, r.status, r.recall,
-          r.color, r.odometer, r.vin, r.days, r.price, r.certified ? "certified" : "",
+          r.color, r.drivetrain, r.odometer, r.vin, r.days, r.price, r.certified ? "certified" : "",
           r.scanDate,
         ]
           .filter((v) => v !== null && v !== undefined)
@@ -661,7 +668,7 @@ export default function LotLedger() {
                   <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 1 }}>
                     {[
                       ["stock", "Stock"], ["year", "Year"], ["make", "Make"], ["model", "Model"],
-                      ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["certified", "Cert"],
+                      ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["drivetrain", "Engine/Drivetrain"], ["certified", "Cert"],
                       ["vin", "VIN"],
                       ["type", "Type"], ["days", "Days"], ["recall", "Recall"],
                     ].map(([field, label]) => (
@@ -682,6 +689,7 @@ export default function LotLedger() {
                       <td className="lg-mono" style={{ padding: "8px 10px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
                       <td className="lg-mono" style={{ padding: "8px 10px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
                       <td style={{ padding: "8px 10px" }}>{r.color}</td>
+                      <td style={{ padding: "8px 10px", color: "#9A9C9E" }}>{r.drivetrain}</td>
                       <td style={{ padding: "8px 10px" }}>{r.certified ? "Yes" : ""}</td>
                       <td className="lg-mono" style={{ padding: "8px 10px", fontSize: 11 }}>{r.vin}</td>
                       <td style={{ padding: "8px 10px", color: "#9A9C9E" }}>{r.type}</td>
