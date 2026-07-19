@@ -532,6 +532,41 @@ export default function LotLedger() {
         @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
       `}</style>
 
+      <div style={{ padding: "10px 12px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* Upload zone */}
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
+          onClick={() => fileInputRef.current?.click()}
+          style={{
+            border: `1.5px dashed ${dragOver ? "#F2A93B" : "#3A3F49"}`,
+            borderRadius: 10,
+            padding: "8px",
+            textAlign: "center",
+            cursor: "pointer",
+            background: dragOver ? "#24272E" : "transparent",
+            transition: "border-color 0.15s, background 0.15s",
+          }}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            multiple
+            style={{ display: "none" }}
+            onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }}
+          />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14 }}>
+            <div style={{ fontSize: 13.5, color: "#ECE7DC", lineHeight: 1.5 }}>
+              Drop today's inventory CSV or Excel (.xlsx/.xls) export here, or{" "}
+              <span style={{ color: "#F2A93B", fontWeight: 700 }}>CLICK</span> to choose a file
+            </div>
+            <FileSpreadsheet size={20} color="#F2A93B" style={{ flexShrink: 0 }} />
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div style={{ background: "#000000", padding: "18px 16px", textAlign: "center" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
@@ -546,41 +581,6 @@ export default function LotLedger() {
       </div>
 
       <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
-        {/* Upload zone */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
-            onClick={() => fileInputRef.current?.click()}
-            style={{
-              border: `1.5px dashed ${dragOver ? "#F2A93B" : "#3A3F49"}`,
-              borderRadius: 10,
-              padding: "8px",
-              textAlign: "center",
-              cursor: "pointer",
-              background: dragOver ? "#24272E" : "transparent",
-              transition: "border-color 0.15s, background 0.15s",
-            }}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              multiple
-              style={{ display: "none" }}
-              onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }}
-            />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14 }}>
-              <div style={{ fontSize: 13.5, color: "#ECE7DC", lineHeight: 1.5 }}>
-                Drop today's inventory CSV or Excel (.xlsx/.xls) export here, or{" "}
-                <span style={{ color: "#F2A93B", fontWeight: 700 }}>CLICK</span> to choose a file
-              </div>
-              <FileSpreadsheet size={20} color="#F2A93B" style={{ flexShrink: 0 }} />
-            </div>
-          </div>
-        </div>
-
         {/* Processing queue */}
         {queue.some((it) => it.status !== "done") && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
