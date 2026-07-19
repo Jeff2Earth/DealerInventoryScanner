@@ -575,11 +575,14 @@ export default function LotLedger() {
           <>
             {/* Filters */}
             <div style={{ background: "#24272E", borderRadius: 10, padding: "16px 18px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showFilters ? 12 : 0 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", marginBottom: showFilters ? 12 : 0 }}>
                 <div className="lg-display" style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
                   <Search size={14} color="#F2A93B" /> Search & filter
                 </div>
-                <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 12, cursor: "pointer" }}>
+                <div className="lg-input" style={{ width: "auto", padding: "5px 14px", fontSize: 12.5, color: "#9A9C9E", justifySelf: "center" }}>
+                  {filtered.length}/{totalCount} vehicles
+                </div>
+                <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 12, cursor: "pointer", justifySelf: "end" }}>
                   {showFilters ? "Hide" : "Show"}
                 </button>
               </div>
@@ -593,14 +596,18 @@ export default function LotLedger() {
                     onChange={(vals) => setFilters((f) => ({ ...f, type: vals }))} />
                   <MultiSelect label="Import date" options={scanDates} selected={filters.scanDate}
                     onChange={(vals) => setFilters((f) => ({ ...f, scanDate: vals }))} />
-                  <input className="lg-input" type="number" placeholder="Year min" value={filters.yearMin}
-                    onChange={(e) => setFilters((f) => ({ ...f, yearMin: e.target.value }))} />
-                  <input className="lg-input" type="number" placeholder="Year max" value={filters.yearMax}
-                    onChange={(e) => setFilters((f) => ({ ...f, yearMax: e.target.value }))} />
-                  <input className="lg-input" type="number" placeholder="Price min ($)" value={filters.priceMin}
-                    onChange={(e) => setFilters((f) => ({ ...f, priceMin: e.target.value }))} />
-                  <input className="lg-input" type="number" placeholder="Price max ($)" value={filters.priceMax}
-                    onChange={(e) => setFilters((f) => ({ ...f, priceMax: e.target.value }))} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <input className="lg-input" type="number" placeholder="Year min" value={filters.yearMin}
+                      onChange={(e) => setFilters((f) => ({ ...f, yearMin: e.target.value }))} />
+                    <input className="lg-input" type="number" placeholder="Year max" value={filters.yearMax}
+                      onChange={(e) => setFilters((f) => ({ ...f, yearMax: e.target.value }))} />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <input className="lg-input" type="number" placeholder="Price min ($)" value={filters.priceMin}
+                      onChange={(e) => setFilters((f) => ({ ...f, priceMin: e.target.value }))} />
+                    <input className="lg-input" type="number" placeholder="Price max ($)" value={filters.priceMax}
+                      onChange={(e) => setFilters((f) => ({ ...f, priceMax: e.target.value }))} />
+                  </div>
                   <input className="lg-input" type="number" placeholder="Max odometer" value={filters.odoMax}
                     onChange={(e) => setFilters((f) => ({ ...f, odoMax: e.target.value }))} />
                   <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13 }}>
@@ -608,9 +615,6 @@ export default function LotLedger() {
                       onChange={(e) => setFilters((f) => ({ ...f, certifiedOnly: e.target.checked }))} />
                     Certified only
                   </label>
-                  <span style={{ display: "flex", alignItems: "center", fontSize: 13, color: "#9A9C9E" }}>
-                    {filtered.length}/{totalCount} vehicles
-                  </span>
                 </div>
               )}
             </div>
