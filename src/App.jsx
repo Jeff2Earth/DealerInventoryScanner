@@ -599,7 +599,7 @@ export default function LotLedger() {
                     <input className="lg-input" type="number" placeholder="Price max ($)" value={filters.priceMax}
                       onChange={(e) => setFilters((f) => ({ ...f, priceMax: e.target.value }))} />
                   </div>
-                  <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+                  <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "center", gap: 26 }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13 }}>
                       <input type="checkbox" checked={filters.certifiedOnly}
                         onChange={(e) => setFilters((f) => ({ ...f, certifiedOnly: e.target.checked }))} />
