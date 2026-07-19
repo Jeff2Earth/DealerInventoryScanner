@@ -500,6 +500,7 @@ export default function LotLedger() {
   return (
     <div style={{ minHeight: "100vh", background: "#1E2027", color: "#ECE7DC", fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
       <style>{`
+        html, body { overscroll-behavior-y: contain; }
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
         .lg-mono { font-family: 'IBM Plex Mono', monospace; }
         .lg-display { font-family: 'Space Grotesk', sans-serif; }
@@ -654,7 +655,7 @@ export default function LotLedger() {
             </div>
 
             {/* Table */}
-            <div style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: 560 }}>
+            <div style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: 560, overscrollBehavior: "contain" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
                 <thead>
                   <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 1 }}>
