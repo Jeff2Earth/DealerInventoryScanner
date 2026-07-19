@@ -316,7 +316,6 @@ export default function LotLedger() {
   const [sortField, setSortField] = useState("price");
   const [sortDir, setSortDir] = useState("desc");
   const [showFilters, setShowFilters] = useState(true);
-  const [scanDateInput, setScanDateInput] = useState(() => new Date().toLocaleDateString());
   const [confirmingClear, setConfirmingClear] = useState(false);
   const [exportHref, setExportHref] = useState(null);
   const [exportName, setExportName] = useState("");
@@ -380,7 +379,7 @@ export default function LotLedger() {
   function handleFiles(fileList) {
     const files = Array.from(fileList).filter((f) => /\.(csv|xlsx|xls)$/i.test(f.name));
     if (files.length === 0) return;
-    const scanDate = scanDateInput || new Date().toLocaleDateString();
+    const scanDate = new Date().toLocaleDateString();
     // Wipe once per import action — every CSV picked together in this batch
     // merges into one dataset; a later, separate import replaces it.
     saveRecords([]);
@@ -492,31 +491,21 @@ export default function LotLedger() {
       `}</style>
 
       {/* Header */}
-      <div style={{ borderBottom: "1px solid #3A3F49", padding: "20px 28px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ borderBottom: "1px solid #3A3F49", padding: "20px 28px", textAlign: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
           <Gauge size={22} color="#F2A93B" />
           <h1 className="lg-display" style={{ fontSize: 22, fontWeight: 700, margin: 0, letterSpacing: 0.2 }}>
             The Lot Ledger
           </h1>
         </div>
-        <div style={{ fontSize: 12.5, color: "#9A9C9E", marginTop: 4 }}>
-          Import your inventory CSV to search it — it's remembered on this device until you import a new one.
+        <div style={{ fontSize: 10.5, color: "#6B6D70", marginTop: 3 }}>
+          designed by Jeff Patrick
         </div>
       </div>
 
       <div style={{ padding: "22px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
-        {/* Scan date + upload zone */}
+        {/* Upload zone */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
-            <span style={{ color: "#9A9C9E" }}>Label this import as:</span>
-            <input
-              className="lg-input"
-              style={{ width: 160 }}
-              value={scanDateInput}
-              onChange={(e) => setScanDateInput(e.target.value)}
-              placeholder="e.g. 07/17/2026"
-            />
-          </div>
           <div
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
