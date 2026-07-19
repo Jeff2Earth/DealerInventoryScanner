@@ -366,6 +366,8 @@ export default function LotLedger() {
   const [exportHref, setExportHref] = useState(null);
   const [exportName, setExportName] = useState("");
   const fileInputRef = useRef(null);
+  const scrollRef = useRef(null);
+  const edgeTouch = useRef({ startY: 0, startScrollTop: 0 });
 
   const [filters, setFilters] = useState({
     search: "",
@@ -505,9 +507,11 @@ export default function LotLedger() {
   }
 
   return (
-    <div style={{ height: "100vh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", background: "#1E2027", color: "#ECE7DC", fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
+    <div ref={scrollRef} className="lg-scroll" style={{ height: "100vh", overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", background: "#1E2027", color: "#ECE7DC", fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
       <style>{`
-        html, body, #root { height: 100%; margin: 0; overscroll-behavior: none; }
+        html, body, #root { height: 100%; margin: 0; overscroll-behavior: none; overflow: hidden; }
+        .lg-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+        .lg-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
         .lg-mono { font-family: 'IBM Plex Mono', monospace; }
         .lg-display { font-family: 'Space Grotesk', sans-serif; }
@@ -743,6 +747,30 @@ export default function LotLedger() {
         )}
       </div>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+
+      {["left", "right"].map((side) => (
+        <div
+          key={side}
+          onTouchStart={(e) => {
+            edgeTouch.current.startY = e.touches[0].clientY;
+            edgeTouch.current.startScrollTop = scrollRef.current.scrollTop;
+          }}
+          onTouchMove={(e) => {
+            const dy = e.touches[0].clientY - edgeTouch.current.startY;
+            scrollRef.current.scrollTop = edgeTouch.current.startScrollTop - dy;
+          }}
+          style={{
+            position: "fixed",
+            top: 0,
+            bottom: 0,
+            [side]: 0,
+            width: 24,
+            zIndex: 40,
+            background: "transparent",
+            touchAction: "none",
+          }}
+        />
+      ))}
     </div>
   );
 }
