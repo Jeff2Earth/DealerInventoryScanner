@@ -367,6 +367,7 @@ export default function LotLedger() {
   const [exportName, setExportName] = useState("");
   const fileInputRef = useRef(null);
   const scrollRef = useRef(null);
+  const tableRef = useRef(null);
   const edgeTouch = useRef({ startY: 0, startScrollTop: 0 });
 
   const [filters, setFilters] = useState({
@@ -666,7 +667,7 @@ export default function LotLedger() {
             </div>
 
             {/* Table */}
-            <div style={{ background: "#24272E", borderRadius: 10, overflowX: "auto", touchAction: "pan-x" }}>
+            <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
                 <thead>
                   <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 1 }}>
