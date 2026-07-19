@@ -571,6 +571,9 @@ export default function LotLedger() {
           <>
             {/* Status gauge */}
             <div style={{ background: "#24272E", borderRadius: 10, padding: "14px 18px" }}>
+              <div style={{ fontSize: 13, color: "#ECE7DC", marginBottom: 8 }}>
+                {filtered.length}/{totalCount} vehicles
+              </div>
               {(() => {
                 const validStatusEntries = Object.entries(statusCounts).filter(([st]) => st);
                 if (validStatusEntries.length === 0) return null;
@@ -632,6 +635,9 @@ export default function LotLedger() {
                       onChange={(e) => setFilters((f) => ({ ...f, certifiedOnly: e.target.checked }))} />
                     Certified only
                   </label>
+                  <span style={{ display: "flex", alignItems: "center", fontSize: 13, color: "#9A9C9E" }}>
+                    {totalCount} vehicles
+                  </span>
                 </div>
               )}
             </div>
