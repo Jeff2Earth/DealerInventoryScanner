@@ -372,7 +372,22 @@ export default function LotLedger() {
   const [records, setRecords] = useState(() => {
     try {
       const saved = localStorage.getItem("lot-ledger-records");
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      // Records saved before the make/model shortening rules existed are
+      // stuck with the old (longer) text forever unless re-processed here —
+      // this keeps previously-imported data in sync with the current rules.
+      const healed = parsed.map((r) => ({
+        ...r,
+        make: shortenMake(r.make),
+        model: shortenModelWords(r.model),
+      }));
+      try {
+        localStorage.setItem("lot-ledger-records", JSON.stringify(healed));
+      } catch (e) {
+        console.error("Couldn't save to this browser's storage", e);
+      }
+      return healed;
     } catch (e) {
       return [];
     }
@@ -702,7 +717,7 @@ export default function LotLedger() {
                 <colgroup>
                   <col style={{ width: "62px" }} />
                   <col style={{ width: "46px" }} />
-                  <col style={{ width: "62px" }} />
+                  <col style={{ width: "54px" }} />
                   <col style={{ width: "155px" }} />
                   <col />
                   <col />
@@ -735,7 +750,7 @@ export default function LotLedger() {
                       <td className="lg-mono" style={{ padding: "4px 5px" }}>{r.stock}</td>
                       <td style={{ padding: "4px 5px" }}>{r.year}</td>
                       <td style={{ padding: "4px 5px", whiteSpace: "nowrap" }}>{r.make}</td>
-                      <td style={{ padding: "4px 7px" }}>{r.model}<div style={{ color: "#6B6D70", fontSize: 13 }}>{r.desc}</div></td>
+                      <td style={{ padding: "4px 5px" }}>{r.model}<div style={{ color: "#6B6D70", fontSize: 13 }}>{r.desc}</div></td>
                       <td className="lg-mono" style={{ padding: "4px 7px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
                       <td className="lg-mono" style={{ padding: "4px 7px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
                       <td style={{ padding: "4px 7px" }}>{r.color}</td>
