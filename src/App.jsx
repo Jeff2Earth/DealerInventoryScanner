@@ -625,7 +625,7 @@ export default function LotLedger() {
               />
 
               <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: showFilters ? 8 : 0 }}>
-                <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 14, cursor: "pointer" }}>
+                <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 14, cursor: "pointer", padding: 12, margin: -12 }}>
                   {showFilters ? "Hide" : "Show"}
                 </button>
               </div>
@@ -670,9 +670,9 @@ export default function LotLedger() {
             <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
               <table style={{ width: "max-content", minWidth: "100%", borderCollapse: "collapse", fontSize: 14.5 }}>
                 <colgroup>
-                  <col style={{ width: "72px" }} />
-                  <col style={{ width: "56px" }} />
-                  <col style={{ width: "76px" }} />
+                  <col style={{ width: "62px" }} />
+                  <col style={{ width: "46px" }} />
+                  <col style={{ width: "62px" }} />
                   <col />
                   <col />
                   <col />
@@ -702,9 +702,9 @@ export default function LotLedger() {
                 <tbody>
                   {filtered.map((r, i) => (
                     <tr key={r.vin + r.scanDate + i} className="lg-row" style={{ background: i % 2 ? "#22252B" : "#24272E" }}>
-                      <td className="lg-mono" style={{ padding: "4px 7px" }}>{r.stock}</td>
-                      <td style={{ padding: "4px 7px" }}>{r.year}</td>
-                      <td style={{ padding: "4px 7px", whiteSpace: "nowrap" }}>{r.make}</td>
+                      <td className="lg-mono" style={{ padding: "4px 5px" }}>{r.stock}</td>
+                      <td style={{ padding: "4px 5px" }}>{r.year}</td>
+                      <td style={{ padding: "4px 5px", whiteSpace: "nowrap" }}>{r.make}</td>
                       <td style={{ padding: "4px 7px" }}>{r.model}<div style={{ color: "#6B6D70", fontSize: 13 }}>{r.desc}</div></td>
                       <td className="lg-mono" style={{ padding: "4px 7px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
                       <td className="lg-mono" style={{ padding: "4px 7px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
