@@ -727,19 +727,19 @@ export default function LotLedger() {
             <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
               <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5 }}>
                 <colgroup>
-                  <col style={{ width: "52px" }} />
-                  <col style={{ width: "40px" }} />
-                  <col style={{ width: "46px" }} />
-                  <col style={{ width: "125px" }} />
-                  <col style={{ width: "72px" }} />
-                  <col style={{ width: "60px" }} />
-                  <col />
-                  <col />
-                  <col />
-                  <col />
-                  <col />
-                  <col />
-                  <col />
+                  <col style={{ width: "52px" }} />  {/* Stock */}
+                  <col style={{ width: "40px" }} />  {/* Year */}
+                  <col style={{ width: "46px" }} />  {/* Make */}
+                  <col style={{ width: "125px" }} /> {/* Model */}
+                  <col style={{ width: "72px" }} />  {/* Price */}
+                  <col style={{ width: "60px" }} />  {/* Odo */}
+                  <col style={{ width: "100px" }} /> {/* Color */}
+                  <col style={{ width: "90px" }} />  {/* Engine/Drivetrain */}
+                  <col style={{ width: "38px" }} />  {/* Cert */}
+                  <col style={{ width: "135px" }} /> {/* VIN */}
+                  <col style={{ width: "52px" }} />  {/* Type */}
+                  <col style={{ width: "40px" }} />  {/* Days */}
+                  <col style={{ width: "70px" }} />  {/* Recall */}
                 </colgroup>
                 <thead>
                   <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 1 }}>
@@ -750,7 +750,7 @@ export default function LotLedger() {
                       ["type", "Type"], ["days", "Days"], ["recall", "Recall"],
                     ].map(([field, label]) => (
                       <th key={field} className="lg-th" onClick={() => toggleSort(field)}
-                        style={{ textAlign: "left", padding: "7px 7px", color: "#9A9C9E", fontWeight: 600, borderBottom: "1px solid #3A3F49" }}>
+                        style={{ textAlign: "left", padding: "7px 5px", color: "#9A9C9E", fontWeight: 600, borderBottom: "1px solid #3A3F49" }}>
                         {label} <SortIcon field={field} />
                       </th>
                     ))}
@@ -770,13 +770,19 @@ export default function LotLedger() {
                       </td>
                       <td className="lg-mono" style={{ padding: "4px 5px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
                       <td className="lg-mono" style={{ padding: "4px 5px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
-                      <td style={{ padding: "4px 7px" }}>{r.color}</td>
-                      <td style={{ padding: "4px 7px", color: "#9A9C9E" }}>{r.drivetrain}</td>
-                      <td style={{ padding: "4px 7px" }}>{r.certified ? "Yes" : ""}</td>
-                      <td className="lg-mono" style={{ padding: "4px 7px", fontSize: 13 }}>{r.vin}</td>
-                      <td style={{ padding: "4px 7px", color: "#9A9C9E" }}>{r.type}</td>
-                      <td className="lg-mono" style={{ padding: "4px 7px", color: "#9A9C9E" }}>{r.days ?? ""}</td>
-                      <td style={{ padding: "4px 7px" }}>
+                      <td style={{ padding: "4px 5px" }}>
+                        {r.color && r.color.includes(" / ") ? (
+                          r.color.split(" / ").map((c, ci) => <div key={ci}>{c}</div>)
+                        ) : (
+                          r.color
+                        )}
+                      </td>
+                      <td style={{ padding: "4px 5px", color: "#9A9C9E" }}>{r.drivetrain}</td>
+                      <td style={{ padding: "4px 5px" }}>{r.certified ? "Yes" : ""}</td>
+                      <td className="lg-mono" style={{ padding: "4px 5px", fontSize: 13, whiteSpace: "nowrap" }}>{r.vin}</td>
+                      <td style={{ padding: "4px 5px", color: "#9A9C9E", whiteSpace: "nowrap" }}>{r.type}</td>
+                      <td className="lg-mono" style={{ padding: "4px 5px", color: "#9A9C9E" }}>{r.days ?? ""}</td>
+                      <td style={{ padding: "4px 5px" }}>
                         {r.recall && (
                           <span style={{ color: /open/i.test(r.recall) ? "#C1502E" : "#3FA796", fontWeight: 600 }}>{r.recall}</span>
                         )}
