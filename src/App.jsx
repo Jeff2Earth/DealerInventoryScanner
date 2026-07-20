@@ -321,13 +321,13 @@ function MultiSelect({ label, options, selected, onChange }) {
         }}>
           {selected.length > 0 && (
             <button type="button" onClick={() => onChange([])}
-              style={{ background: "none", border: "none", color: "#F2A93B", fontSize: 11.5, cursor: "pointer", padding: "4px 6px", display: "block" }}>
+              style={{ background: "none", border: "none", color: "#F2A93B", fontSize: 12.5, cursor: "pointer", padding: "4px 6px", display: "block" }}>
               Clear {label.toLowerCase()}
             </button>
           )}
-          {options.length === 0 && <div style={{ fontSize: 12, color: "#6B6D70", padding: "4px 6px" }}>No options yet</div>}
+          {options.length === 0 && <div style={{ fontSize: 13, color: "#6B6D70", padding: "4px 6px" }}>No options yet</div>}
           {options.map((opt) => (
-            <label key={opt} className="lg-row" style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, padding: "5px 6px", cursor: "pointer", borderRadius: 4 }}>
+            <label key={opt} className="lg-row" style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13.5, padding: "5px 6px", cursor: "pointer", borderRadius: 4 }}>
               <input type="checkbox" checked={selected.includes(opt)} onChange={() => toggleValue(opt)} />
               {opt}
             </label>
@@ -518,7 +518,7 @@ export default function LotLedger() {
         .lg-display { font-family: 'Space Grotesk', sans-serif; }
         .lg-input {
           background: #3D4354; border: 1px solid #6B7280; color: #ECE7DC;
-          border-radius: 6px; padding: 7px 10px; font-size: 13px; font-family: 'IBM Plex Sans', sans-serif;
+          border-radius: 6px; padding: 7px 10px; font-size: 14px; font-family: 'IBM Plex Sans', sans-serif;
           outline: none; width: 100%; box-sizing: border-box;
         }
         .lg-input:focus { border-color: #FFC15E; background: #454C60; }
@@ -558,7 +558,7 @@ export default function LotLedger() {
             onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }}
           />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14 }}>
-            <div style={{ fontSize: 13.5, color: "#ECE7DC", lineHeight: 1.5 }}>
+            <div style={{ fontSize: 14.5, color: "#ECE7DC", lineHeight: 1.5 }}>
               Drop today's inventory CSV or Excel (.xlsx/.xls) export here, or{" "}
               <span style={{ color: "#F2A93B", fontWeight: 700 }}>CLICK</span> to choose a file
             </div>
@@ -568,7 +568,7 @@ export default function LotLedger() {
       </div>
 
       {/* Header */}
-      <div style={{ background: "#000000", padding: "18px 16px", textAlign: "center" }}>
+      <div style={{ background: "#000000", padding: "20px 16px 0", textAlign: "center" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
           <Gauge size={22} color="#E8C468" />
           <h1 className="lg-display" style={{ fontSize: 21, fontWeight: 700, margin: 0, letterSpacing: 2, color: "#E8C468", textTransform: "uppercase" }}>
@@ -578,6 +578,9 @@ export default function LotLedger() {
         <div style={{ fontSize: 11, color: "#7A7565", marginTop: 6 }}>
           designed by <b style={{ color: "#FFE29A" }}>Jeff Patrick</b>
         </div>
+        <div style={{ marginTop: 16, height: 14, position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: 6, left: 0, right: 0, height: 2, background: "repeating-linear-gradient(90deg, #E8C468 0 22px, transparent 22px 40px)" }} />
+        </div>
       </div>
 
       <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -585,7 +588,7 @@ export default function LotLedger() {
         {queue.some((it) => it.status !== "done") && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {queue.filter((it) => it.status !== "done").map((it) => (
-              <div key={it.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, background: "#24272E", borderRadius: 6, padding: "7px 12px" }}>
+              <div key={it.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, background: "#24272E", borderRadius: 6, padding: "7px 12px" }}>
                 {it.status === "reading" ? (
                   <Loader2 size={14} className="lg-mono" style={{ animation: "spin 1s linear infinite" }} />
                 ) : it.status === "error" ? (
@@ -606,7 +609,7 @@ export default function LotLedger() {
         )}
 
         {totalCount === 0 && queue.length === 0 && (
-          <div style={{ textAlign: "center", color: "#6B6D70", fontSize: 13, padding: "30px 0" }}>
+          <div style={{ textAlign: "center", color: "#6B6D70", fontSize: 14, padding: "30px 0" }}>
             No inventory loaded — import a CSV above to get started.
           </div>
         )}
@@ -625,7 +628,7 @@ export default function LotLedger() {
               />
 
               <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: showFilters ? 8 : 0 }}>
-                <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 12, cursor: "pointer" }}>
+                <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 13, cursor: "pointer" }}>
                   {showFilters ? "Hide" : "Show"}
                 </button>
               </div>
@@ -653,12 +656,12 @@ export default function LotLedger() {
                       onChange={(e) => setFilters((f) => ({ ...f, priceMax: e.target.value }))} />
                   </div>
                   <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "center", gap: 26, marginTop: 2 }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13 }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 14 }}>
                       <input type="checkbox" checked={filters.certifiedOnly}
                         onChange={(e) => setFilters((f) => ({ ...f, certifiedOnly: e.target.checked }))} />
                       Certified only
                     </label>
-                    <span style={{ fontSize: 12.5, color: "#9A9C9E" }}>
+                    <span style={{ fontSize: 13.5, color: "#9A9C9E" }}>
                       {filtered.length}/{totalCount} vehicles
                     </span>
                   </div>
@@ -668,7 +671,7 @@ export default function LotLedger() {
 
             {/* Table */}
             <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
                 <thead>
                   <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 1 }}>
                     {[
@@ -690,13 +693,13 @@ export default function LotLedger() {
                       <td className="lg-mono" style={{ padding: "6px 8px" }}>{r.stock}</td>
                       <td style={{ padding: "6px 8px" }}>{r.year}</td>
                       <td style={{ padding: "6px 8px" }}>{r.make}</td>
-                      <td style={{ padding: "6px 8px" }}>{r.model}<div style={{ color: "#6B6D70", fontSize: 11 }}>{r.desc}</div></td>
+                      <td style={{ padding: "6px 8px" }}>{r.model}<div style={{ color: "#6B6D70", fontSize: 12 }}>{r.desc}</div></td>
                       <td className="lg-mono" style={{ padding: "6px 8px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
                       <td className="lg-mono" style={{ padding: "6px 8px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
                       <td style={{ padding: "6px 8px" }}>{r.color}</td>
                       <td style={{ padding: "6px 8px", color: "#9A9C9E" }}>{r.drivetrain}</td>
                       <td style={{ padding: "6px 8px" }}>{r.certified ? "Yes" : ""}</td>
-                      <td className="lg-mono" style={{ padding: "6px 8px", fontSize: 11 }}>{r.vin}</td>
+                      <td className="lg-mono" style={{ padding: "6px 8px", fontSize: 12 }}>{r.vin}</td>
                       <td style={{ padding: "6px 8px", color: "#9A9C9E" }}>{r.type}</td>
                       <td className="lg-mono" style={{ padding: "6px 8px", color: "#9A9C9E" }}>{r.days ?? ""}</td>
                       <td style={{ padding: "6px 8px" }}>
@@ -709,27 +712,27 @@ export default function LotLedger() {
                 </tbody>
               </table>
               {filtered.length === 0 && (
-                <div style={{ textAlign: "center", color: "#6B6D70", padding: "24px", fontSize: 13 }}>No vehicles match these filters.</div>
+                <div style={{ textAlign: "center", color: "#6B6D70", padding: "24px", fontSize: 14 }}>No vehicles match these filters.</div>
               )}
             </div>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 12, color: "#9A9C9E" }}>
+              <span style={{ fontSize: 13, color: "#9A9C9E" }}>
                 {totalCount} vehicles — imported {scanDates[0] || "recently"}
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 {confirmingClear ? (
                   <>
-                    <span style={{ fontSize: 12, color: "#9A9C9E" }}>Clear everything?</span>
+                    <span style={{ fontSize: 13, color: "#9A9C9E" }}>Clear everything?</span>
                     <button onClick={clearAll} style={{
                       background: "#C1502E", border: "1px solid #C1502E", color: "#ECE7DC", borderRadius: 6,
-                      padding: "7px 12px", fontSize: 12, cursor: "pointer",
+                      padding: "7px 12px", fontSize: 13, cursor: "pointer",
                     }}>
                       Yes, clear it
                     </button>
                     <button onClick={() => setConfirmingClear(false)} style={{
                       background: "none", border: "1px solid #3A3F49", color: "#9A9C9E", borderRadius: 6,
-                      padding: "7px 12px", fontSize: 12, cursor: "pointer",
+                      padding: "7px 12px", fontSize: 13, cursor: "pointer",
                     }}>
                       Cancel
                     </button>
@@ -737,7 +740,7 @@ export default function LotLedger() {
                 ) : (
                   <button onClick={() => setConfirmingClear(true)} style={{
                     background: "none", border: "1px solid #3A3F49", color: "#C1502E", borderRadius: 6,
-                    padding: "7px 12px", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+                    padding: "7px 12px", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
                   }}>
                     <Trash2 size={13} /> Clear current import
                   </button>
