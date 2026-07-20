@@ -1,6 +1,14 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import * as XLSX from "xlsx";
-import { Upload, Search, Trash2, ChevronUp, ChevronDown, Loader2, AlertTriangle, X, Gauge, FileSpreadsheet, Download } from "lucide-react";
+import { Upload, Search, Trash2, ChevronUp, ChevronDown, Loader2, AlertTriangle, X, Gauge, FileSpreadsheet, Download, FolderOpen } from "lucide-react";
+
+// ---- Google Drive integration ----
+// Lets "Cloud Drive" list files from one specific folder and import
+// whichever one is tapped, using the same pipeline as a local upload.
+const GOOGLE_API_KEY = "AIzaSyB83DBxB4RhCKSVO204UAJwttYn9c5O7sM";
+const GOOGLE_CLIENT_ID = "188213564865-kccradb2a14ghtr4hkjsvmlmvan6f1h8.apps.googleusercontent.com";
+const GOOGLE_DRIVE_FOLDER_ID = "15FRZCsq1RHTn0Ur5B93bqv3MfKCC42kp";
+const GOOGLE_DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
 
 // ---- design tokens ----
 // bg: #1B1D22 (warm charcoal, not pure black)
@@ -425,6 +433,13 @@ export default function LotLedger() {
   const fileInputRef = useRef(null);
   const scrollRef = useRef(null);
   const tableRef = useRef(null);
+  const driveTokenClient = useRef(null);
+  const driveAccessToken = useRef(null);
+  const [driveScriptReady, setDriveScriptReady] = useState(false);
+  const [showDrivePicker, setShowDrivePicker] = useState(false);
+  const [driveFiles, setDriveFiles] = useState([]);
+  const [driveLoading, setDriveLoading] = useState(false);
+  const [driveError, setDriveError] = useState("");
   const edgeTouch = useRef({ startY: 0, startScrollTop: 0 });
 
   const [filters, setFilters] = useState({
@@ -488,6 +503,106 @@ export default function LotLedger() {
     files.forEach((f) => processFile(f, scanDate));
   }
 
+  // Loads Google's Identity Services library once, on demand (first time the
+  // Cloud Drive button is used) rather than on every page load.
+  function loadDriveScript() {
+    if (window.google?.accounts?.oauth2) {
+      setDriveScriptReady(true);
+      return;
+    }
+    const existing = document.getElementById("gis-script");
+    if (existing) {
+      existing.addEventListener("load", () => setDriveScriptReady(true));
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = "gis-script";
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.onload = () => setDriveScriptReady(true);
+    script.onerror = () => setDriveError("Couldn't load Google's sign-in library — check your connection.");
+    document.head.appendChild(script);
+  }
+
+  async function fetchDriveFiles(accessToken) {
+    setDriveLoading(true);
+    setDriveError("");
+    try {
+      const q = encodeURIComponent(`'${GOOGLE_DRIVE_FOLDER_ID}' in parents and trashed = false`);
+      const fields = encodeURIComponent("files(id,name,mimeType,modifiedTime)");
+      const res = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=${q}&fields=${fields}&orderBy=modifiedTime desc&key=${GOOGLE_API_KEY}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      if (!res.ok) throw new Error(`Drive returned ${res.status}`);
+      const data = await res.json();
+      const usable = (data.files || []).filter((f) =>
+        /\.(csv|xlsx|xls)$/i.test(f.name) || f.mimeType === "application/vnd.google-apps.spreadsheet"
+      );
+      setDriveFiles(usable);
+      if (usable.length === 0) setDriveError("No CSV/Excel files found in that folder.");
+    } catch (e) {
+      setDriveError("Couldn't load the folder — " + e.message);
+    } finally {
+      setDriveLoading(false);
+    }
+  }
+
+  function openDrivePicker() {
+    setShowDrivePicker(true);
+    setDriveError("");
+    if (!window.google?.accounts?.oauth2) {
+      loadDriveScript();
+      setDriveError("Still loading — try again in a second.");
+      return;
+    }
+    if (!driveTokenClient.current) {
+      driveTokenClient.current = window.google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: GOOGLE_DRIVE_SCOPE,
+        callback: (resp) => {
+          if (resp.error) {
+            setDriveError("Sign-in was cancelled or failed.");
+            return;
+          }
+          driveAccessToken.current = resp.access_token;
+          fetchDriveFiles(resp.access_token);
+        },
+      });
+    }
+    driveTokenClient.current.requestAccessToken();
+  }
+
+  async function importDriveFile(accessToken, file) {
+    setDriveLoading(true);
+    setDriveError("");
+    try {
+      const isGoogleSheet = file.mimeType === "application/vnd.google-apps.spreadsheet";
+      const url = isGoogleSheet
+        ? `https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=${encodeURIComponent("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}&key=${GOOGLE_API_KEY}`
+        : `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&key=${GOOGLE_API_KEY}`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+      if (!res.ok) throw new Error(`Drive returned ${res.status}`);
+      const blob = await res.blob();
+      const name = isGoogleSheet && !/\.xlsx$/i.test(file.name) ? `${file.name}.xlsx` : file.name;
+      const localFile = new File([blob], name, { type: blob.type });
+      handleFiles([localFile]);
+      setShowDrivePicker(false);
+    } catch (e) {
+      setDriveError("Couldn't import that file — " + e.message);
+    } finally {
+      setDriveLoading(false);
+    }
+  }
+
+  function selectDriveFile(file) {
+    if (driveAccessToken.current) {
+      importDriveFile(driveAccessToken.current, file);
+    } else {
+      setDriveError("Signed-in session expired — tap Cloud Drive again.");
+    }
+  }
+
   function clearAll() {
     saveRecords([]);
     setQueue([]);
@@ -549,6 +664,10 @@ export default function LotLedger() {
   }, [records, filters, sortField, sortDir]);
 
   const totalCount = records.length;
+
+  useEffect(() => {
+    loadDriveScript();
+  }, []);
 
   function toggleSort(field) {
     if (sortField === field) {
@@ -614,18 +733,16 @@ export default function LotLedger() {
             onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }}
           />
 
-          <a
-            href="https://drive.google.com/drive/folders/15FRZCsq1RHTn0Ur5B93bqv3MfKCC42kp"
-            target="_blank"
-            rel="noopener noreferrer"
+          <div
+            onClick={openDrivePicker}
             style={{
               flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              fontSize: 15.5, color: "#ECE7DC", textDecoration: "none", cursor: "pointer", padding: "6px 4px",
+              fontSize: 15.5, color: "#ECE7DC", cursor: "pointer", padding: "6px 4px",
             }}
           >
             <Upload size={17} color="#F2A93B" style={{ flexShrink: 0 }} />
             Cloud Drive
-          </a>
+          </div>
 
           <div style={{ width: 1, background: "#3A3F49", margin: "0 4px" }} />
 
@@ -641,6 +758,56 @@ export default function LotLedger() {
           </div>
         </div>
       </div>
+
+      {showDrivePicker && (
+        <div
+          onClick={() => setShowDrivePicker(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "#24272E", borderRadius: 12, padding: 16, width: "100%", maxWidth: 420, maxHeight: "70vh", display: "flex", flexDirection: "column" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 600 }}>
+                <FolderOpen size={18} color="#F2A93B" />
+                Cloud Drive
+              </div>
+              <X size={18} style={{ cursor: "pointer", color: "#9A9C9E" }} onClick={() => setShowDrivePicker(false)} />
+            </div>
+
+            {driveLoading && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#9A9C9E", fontSize: 14, padding: "16px 0" }}>
+                <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> Working…
+              </div>
+            )}
+
+            {driveError && !driveLoading && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#C1502E", fontSize: 13.5, padding: "8px 0" }}>
+                <AlertTriangle size={14} /> {driveError}
+              </div>
+            )}
+
+            {!driveLoading && driveFiles.length > 0 && (
+              <div style={{ overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+                {driveFiles.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => selectDriveFile(f)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 8, background: "#2C303A", border: "1px solid #3A3F49",
+                      borderRadius: 8, padding: "10px 12px", color: "#ECE7DC", fontSize: 14.5, textAlign: "left", cursor: "pointer",
+                    }}
+                  >
+                    <FileSpreadsheet size={15} color="#F2A93B" style={{ flexShrink: 0 }} />
+                    {f.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div style={{ background: "#000000", padding: "20px 16px 0", textAlign: "center" }}>
