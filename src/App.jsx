@@ -578,9 +578,7 @@ export default function LotLedger() {
         <div style={{ fontSize: 11, color: "#7A7565", marginTop: 6 }}>
           designed by <b style={{ color: "#FFE29A" }}>Jeff Patrick</b>
         </div>
-        <div style={{ marginTop: 16, height: 14, position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: 6, left: 0, right: 0, height: 2, background: "repeating-linear-gradient(90deg, #E8C468 0 22px, transparent 22px 40px)" }} />
-        </div>
+        <div style={{ height: 14 }} />
       </div>
 
       <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -690,19 +688,19 @@ export default function LotLedger() {
                 <tbody>
                   {filtered.map((r, i) => (
                     <tr key={r.vin + r.scanDate + i} className="lg-row" style={{ background: i % 2 ? "#22252B" : "#24272E" }}>
-                      <td className="lg-mono" style={{ padding: "6px 8px" }}>{r.stock}</td>
-                      <td style={{ padding: "6px 8px" }}>{r.year}</td>
-                      <td style={{ padding: "6px 8px" }}>{r.make}</td>
-                      <td style={{ padding: "6px 8px" }}>{r.model}<div style={{ color: "#6B6D70", fontSize: 13 }}>{r.desc}</div></td>
-                      <td className="lg-mono" style={{ padding: "6px 8px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
-                      <td className="lg-mono" style={{ padding: "6px 8px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
-                      <td style={{ padding: "6px 8px" }}>{r.color}</td>
-                      <td style={{ padding: "6px 8px", color: "#9A9C9E" }}>{r.drivetrain}</td>
-                      <td style={{ padding: "6px 8px" }}>{r.certified ? "Yes" : ""}</td>
-                      <td className="lg-mono" style={{ padding: "6px 8px", fontSize: 13 }}>{r.vin}</td>
-                      <td style={{ padding: "6px 8px", color: "#9A9C9E" }}>{r.type}</td>
-                      <td className="lg-mono" style={{ padding: "6px 8px", color: "#9A9C9E" }}>{r.days ?? ""}</td>
-                      <td style={{ padding: "6px 8px" }}>
+                      <td className="lg-mono" style={{ padding: "4px 8px" }}>{r.stock}</td>
+                      <td style={{ padding: "4px 8px" }}>{r.year}</td>
+                      <td style={{ padding: "4px 8px" }}>{r.make}</td>
+                      <td style={{ padding: "4px 8px" }}>{r.model}<div style={{ color: "#6B6D70", fontSize: 13 }}>{r.desc}</div></td>
+                      <td className="lg-mono" style={{ padding: "4px 8px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
+                      <td className="lg-mono" style={{ padding: "4px 8px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
+                      <td style={{ padding: "4px 8px" }}>{r.color}</td>
+                      <td style={{ padding: "4px 8px", color: "#9A9C9E" }}>{r.drivetrain}</td>
+                      <td style={{ padding: "4px 8px" }}>{r.certified ? "Yes" : ""}</td>
+                      <td className="lg-mono" style={{ padding: "4px 8px", fontSize: 13 }}>{r.vin}</td>
+                      <td style={{ padding: "4px 8px", color: "#9A9C9E" }}>{r.type}</td>
+                      <td className="lg-mono" style={{ padding: "4px 8px", color: "#9A9C9E" }}>{r.days ?? ""}</td>
+                      <td style={{ padding: "4px 8px" }}>
                         {r.recall && (
                           <span style={{ color: /open/i.test(r.recall) ? "#C1502E" : "#3FA796", fontWeight: 600 }}>{r.recall}</span>
                         )}
