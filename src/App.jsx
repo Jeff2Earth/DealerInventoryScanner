@@ -139,6 +139,7 @@ function classifyType(model) {
 // no-wrap) Make column to stretch wide — add more entries here as needed.
 const MAKE_SHORTENINGS = {
   "mercedes-benz": "Mercedes",
+  "volkswagen": "V.W.",
 };
 function shortenMake(make) {
   const m = (make || "").toString().trim();
@@ -161,6 +162,17 @@ const MODEL_WORD_SHORTENINGS = {
 function shortenModelWords(model) {
   const s = (model || "").toString();
   return s.replace(/[A-Za-z]+/g, (word) => MODEL_WORD_SHORTENINGS[word.toLowerCase()] || word);
+}
+
+// Words that should always start a new line in the Model cell — e.g.
+// "CX-30 Preferred Pkg" becomes "CX-30" / "Preferred Pkg" instead of
+// wrapping wherever it happens to run out of room. Add more as needed.
+const MODEL_LINE_BREAK_BEFORE = ["preferred"];
+function modelLineBreakParts(model) {
+  const words = (model || "").toString().split(" ");
+  const breakIdx = words.findIndex((w, i) => i > 0 && MODEL_LINE_BREAK_BEFORE.includes(w.toLowerCase()));
+  if (breakIdx === -1) return [model];
+  return [words.slice(0, breakIdx).join(" "), words.slice(breakIdx).join(" ")];
 }
 
 function normalizeLegacyRow(r) {
@@ -715,12 +727,12 @@ export default function LotLedger() {
             <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
               <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5 }}>
                 <colgroup>
-                  <col style={{ width: "62px" }} />
+                  <col style={{ width: "52px" }} />
+                  <col style={{ width: "40px" }} />
                   <col style={{ width: "46px" }} />
-                  <col style={{ width: "54px" }} />
-                  <col style={{ width: "155px" }} />
-                  <col />
-                  <col />
+                  <col style={{ width: "125px" }} />
+                  <col style={{ width: "72px" }} />
+                  <col style={{ width: "60px" }} />
                   <col />
                   <col />
                   <col />
@@ -750,9 +762,14 @@ export default function LotLedger() {
                       <td className="lg-mono" style={{ padding: "4px 5px" }}>{r.stock}</td>
                       <td style={{ padding: "4px 5px" }}>{r.year}</td>
                       <td style={{ padding: "4px 5px", whiteSpace: "nowrap" }}>{r.make}</td>
-                      <td style={{ padding: "4px 5px" }}>{r.model}<div style={{ color: "#6B6D70", fontSize: 13 }}>{r.desc}</div></td>
-                      <td className="lg-mono" style={{ padding: "4px 7px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
-                      <td className="lg-mono" style={{ padding: "4px 7px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
+                      <td style={{ padding: "4px 5px" }}>
+                        {modelLineBreakParts(r.model).map((part, pi) => (
+                          <span key={pi}>{pi > 0 && <br />}{part}</span>
+                        ))}
+                        <div style={{ color: "#6B6D70", fontSize: 13 }}>{r.desc}</div>
+                      </td>
+                      <td className="lg-mono" style={{ padding: "4px 5px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
+                      <td className="lg-mono" style={{ padding: "4px 5px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
                       <td style={{ padding: "4px 7px" }}>{r.color}</td>
                       <td style={{ padding: "4px 7px", color: "#9A9C9E" }}>{r.drivetrain}</td>
                       <td style={{ padding: "4px 7px" }}>{r.certified ? "Yes" : ""}</td>
