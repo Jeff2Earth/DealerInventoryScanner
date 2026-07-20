@@ -581,7 +581,7 @@ export default function LotLedger() {
         <div style={{ height: 14 }} />
       </div>
 
-      <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ padding: "10px 12px 10px 8px", display: "flex", flexDirection: "column", gap: 8 }}>
         {/* Processing queue */}
         {queue.some((it) => it.status !== "done") && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -679,7 +679,7 @@ export default function LotLedger() {
                       ["type", "Type"], ["days", "Days"], ["recall", "Recall"],
                     ].map(([field, label]) => (
                       <th key={field} className="lg-th" onClick={() => toggleSort(field)}
-                        style={{ textAlign: "left", padding: "7px 8px", color: "#9A9C9E", fontWeight: 600, borderBottom: "1px solid #3A3F49" }}>
+                        style={{ textAlign: "left", padding: "7px 7px", color: "#9A9C9E", fontWeight: 600, borderBottom: "1px solid #3A3F49" }}>
                         {label} <SortIcon field={field} />
                       </th>
                     ))}
@@ -688,19 +688,19 @@ export default function LotLedger() {
                 <tbody>
                   {filtered.map((r, i) => (
                     <tr key={r.vin + r.scanDate + i} className="lg-row" style={{ background: i % 2 ? "#22252B" : "#24272E" }}>
-                      <td className="lg-mono" style={{ padding: "4px 8px" }}>{r.stock}</td>
-                      <td style={{ padding: "4px 8px" }}>{r.year}</td>
-                      <td style={{ padding: "4px 8px" }}>{r.make}</td>
-                      <td style={{ padding: "4px 8px" }}>{r.model}<div style={{ color: "#6B6D70", fontSize: 13 }}>{r.desc}</div></td>
-                      <td className="lg-mono" style={{ padding: "4px 8px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
-                      <td className="lg-mono" style={{ padding: "4px 8px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
-                      <td style={{ padding: "4px 8px" }}>{r.color}</td>
-                      <td style={{ padding: "4px 8px", color: "#9A9C9E" }}>{r.drivetrain}</td>
-                      <td style={{ padding: "4px 8px" }}>{r.certified ? "Yes" : ""}</td>
-                      <td className="lg-mono" style={{ padding: "4px 8px", fontSize: 13 }}>{r.vin}</td>
-                      <td style={{ padding: "4px 8px", color: "#9A9C9E" }}>{r.type}</td>
-                      <td className="lg-mono" style={{ padding: "4px 8px", color: "#9A9C9E" }}>{r.days ?? ""}</td>
-                      <td style={{ padding: "4px 8px" }}>
+                      <td className="lg-mono" style={{ padding: "4px 7px" }}>{r.stock}</td>
+                      <td style={{ padding: "4px 7px" }}>{r.year}</td>
+                      <td style={{ padding: "4px 7px" }}>{r.make}</td>
+                      <td style={{ padding: "4px 7px" }}>{r.model}<div style={{ color: "#6B6D70", fontSize: 13 }}>{r.desc}</div></td>
+                      <td className="lg-mono" style={{ padding: "4px 7px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
+                      <td className="lg-mono" style={{ padding: "4px 7px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
+                      <td style={{ padding: "4px 7px" }}>{r.color}</td>
+                      <td style={{ padding: "4px 7px", color: "#9A9C9E" }}>{r.drivetrain}</td>
+                      <td style={{ padding: "4px 7px" }}>{r.certified ? "Yes" : ""}</td>
+                      <td className="lg-mono" style={{ padding: "4px 7px", fontSize: 13 }}>{r.vin}</td>
+                      <td style={{ padding: "4px 7px", color: "#9A9C9E" }}>{r.type}</td>
+                      <td className="lg-mono" style={{ padding: "4px 7px", color: "#9A9C9E" }}>{r.days ?? ""}</td>
+                      <td style={{ padding: "4px 7px" }}>
                         {r.recall && (
                           <span style={{ color: /open/i.test(r.recall) ? "#C1502E" : "#3FA796", fontWeight: 600 }}>{r.recall}</span>
                         )}
