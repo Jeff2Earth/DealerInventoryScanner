@@ -873,7 +873,7 @@ export default function LotLedger() {
               {/* General search */}
               <input
                 className="lg-input"
-                style={{ marginBottom: 4, padding: "6px 10px", textAlign: "center", maxWidth: 640, margin: "0 auto 4px" }}
+                style={{ marginBottom: 4, padding: "6px 10px", textAlign: "center", maxWidth: 640, margin: "0 auto 4px", display: "block" }}
                 placeholder="Search anything (stock, VIN, model, color, price…)"
                 value={filters.search}
                 onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
