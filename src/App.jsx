@@ -39,6 +39,13 @@ function parseMoney(v) {
   return isNaN(n) ? null : n;
 }
 
+// Added to every vehicle's price on import (not retroactive to already-saved
+// data). Change the number here, or set to 0 to turn it off.
+const PRICE_MARKUP = 2000;
+function markUpPrice(price) {
+  return price === null ? null : price + PRICE_MARKUP;
+}
+
 function parseNum(v) {
   if (v === null || v === undefined || v === "") return null;
   const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
@@ -197,7 +204,7 @@ function normalizeLegacyRow(r) {
     odometer: parseNum(r.o),
     vin: (r.v ?? "").toString().trim().toUpperCase(),
     days: parseNum(r.d),
-    price: parseMoney(r.p),
+    price: markUpPrice(parseMoney(r.p)),
     certified: !!r.ce,
     recall: "",
     drivetrain: "",
@@ -251,7 +258,7 @@ function normalizePricingRow(row) {
     odometer: parseNum(getField(row, "odometer")),
     vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
     days: null, // this export doesn't include a days-on-lot column
-    price: parseMoney(getField(row, "price / % mkt")),
+    price: markUpPrice(parseMoney(getField(row, "price / % mkt"))),
     certified: /^y/i.test(certifiedVal.trim()),
     recall: (getField(row, "recall status") || "").toString().trim(),
     drivetrain: "",
@@ -293,7 +300,7 @@ function normalizePricingViewRow(row) {
     odometer: parseNum(getField(row, "odometer")),
     vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
     days: daysSince(getField(row, "inventory date")),
-    price: parseMoney(getField(row, "price")),
+    price: markUpPrice(parseMoney(getField(row, "price"))),
     certified: /^y/i.test(certifiedVal.trim()),
     recall: (getField(row, "recall status icon small") || "").toString().trim(),
     drivetrain: engine && drivetrainType ? `${engine}/${drivetrainType}` : (engine || drivetrainType),
