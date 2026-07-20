@@ -670,6 +670,21 @@ export default function LotLedger() {
             {/* Table */}
             <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14.5 }}>
+                <colgroup>
+                  <col style={{ width: "72px" }} />
+                  <col style={{ width: "56px" }} />
+                  <col style={{ width: "76px" }} />
+                  <col />
+                  <col />
+                  <col />
+                  <col />
+                  <col />
+                  <col />
+                  <col />
+                  <col />
+                  <col />
+                  <col />
+                </colgroup>
                 <thead>
                   <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 1 }}>
                     {[
@@ -690,7 +705,7 @@ export default function LotLedger() {
                     <tr key={r.vin + r.scanDate + i} className="lg-row" style={{ background: i % 2 ? "#22252B" : "#24272E" }}>
                       <td className="lg-mono" style={{ padding: "4px 7px" }}>{r.stock}</td>
                       <td style={{ padding: "4px 7px" }}>{r.year}</td>
-                      <td style={{ padding: "4px 7px" }}>{r.make}</td>
+                      <td style={{ padding: "4px 7px", whiteSpace: "nowrap" }}>{r.make}</td>
                       <td style={{ padding: "4px 7px" }}>{r.model}<div style={{ color: "#6B6D70", fontSize: 13 }}>{r.desc}</div></td>
                       <td className="lg-mono" style={{ padding: "4px 7px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
                       <td className="lg-mono" style={{ padding: "4px 7px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
