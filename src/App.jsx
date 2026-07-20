@@ -595,13 +595,12 @@ export default function LotLedger() {
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
-          onClick={() => fileInputRef.current?.click()}
           style={{
             border: `1.5px dashed ${dragOver ? "#F2A93B" : "#3A3F49"}`,
             borderRadius: 10,
             padding: "8px",
-            textAlign: "center",
-            cursor: "pointer",
+            display: "flex",
+            alignItems: "stretch",
             background: dragOver ? "#24272E" : "transparent",
             transition: "border-color 0.15s, background 0.15s",
           }}
@@ -614,11 +613,31 @@ export default function LotLedger() {
             style={{ display: "none" }}
             onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }}
           />
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, whiteSpace: "nowrap" }}>
-            <div style={{ fontSize: 15.5, color: "#ECE7DC" }}>
-              <span style={{ color: "#F2A93B", fontWeight: 700 }}>CLICK</span> to choose today's inventory file
-            </div>
-            <FileSpreadsheet size={20} color="#F2A93B" style={{ flexShrink: 0 }} />
+
+          <a
+            href="https://drive.google.com/drive/folders/15FRZCsq1RHTn0Ur5B93bqv3MfKCC42kp"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              fontSize: 15.5, color: "#ECE7DC", textDecoration: "none", cursor: "pointer", padding: "6px 4px",
+            }}
+          >
+            <Upload size={17} color="#F2A93B" style={{ flexShrink: 0 }} />
+            Cloud Drive
+          </a>
+
+          <div style={{ width: 1, background: "#3A3F49", margin: "0 4px" }} />
+
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              fontSize: 15.5, color: "#ECE7DC", cursor: "pointer", padding: "6px 4px",
+            }}
+          >
+            <FileSpreadsheet size={17} color="#F2A93B" style={{ flexShrink: 0 }} />
+            Upload XLS
           </div>
         </div>
       </div>
