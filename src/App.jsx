@@ -675,11 +675,14 @@ export default function LotLedger() {
               {/* General search */}
               <input
                 className="lg-input"
-                style={{ marginBottom: 8, padding: "6px 10px", textAlign: "center" }}
+                style={{ marginBottom: 4, padding: "6px 10px", textAlign: "center" }}
                 placeholder="Search anything (stock, VIN, model, color, price…)"
                 value={filters.search}
                 onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
               />
+              <div style={{ textAlign: "center", fontSize: 13, color: "#9A9C9E", marginBottom: 8 }}>
+                {filtered.length}/{totalCount} vehicles
+              </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: showFilters ? 8 : 0 }}>
                 <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 14, cursor: "pointer", padding: 12, margin: -12 }}>
@@ -713,15 +716,18 @@ export default function LotLedger() {
                     <input className="lg-input" type="number" placeholder="Price max ($)" value={filters.priceMax}
                       onChange={(e) => setFilters((f) => ({ ...f, priceMax: e.target.value }))} />
                   </div>
-                  <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "center", gap: 26, marginTop: 2 }}>
+                  <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 26, marginTop: 2 }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 15 }}>
                       <input type="checkbox" checked={filters.certifiedOnly}
                         onChange={(e) => setFilters((f) => ({ ...f, certifiedOnly: e.target.checked }))} />
                       Certified only
                     </label>
-                    <span style={{ fontSize: 14.5, color: "#9A9C9E" }}>
-                      {filtered.length}/{totalCount} vehicles
-                    </span>
+                    <button
+                      onClick={() => setFilters((f) => ({ ...f, search: "" }))}
+                      style={{ background: "none", border: "1px solid #3A3F49", color: "#9A9C9E", borderRadius: 6, padding: "5px 10px", fontSize: 13.5, cursor: "pointer" }}
+                    >
+                      Clear search
+                    </button>
                   </div>
                 </div>
               )}
