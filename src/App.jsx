@@ -727,19 +727,19 @@ export default function LotLedger() {
             <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
               <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5 }}>
                 <colgroup>
-                  <col style={{ width: "52px" }} />  {/* Stock */}
-                  <col style={{ width: "40px" }} />  {/* Year */}
-                  <col style={{ width: "46px" }} />  {/* Make */}
-                  <col style={{ width: "125px" }} /> {/* Model */}
-                  <col style={{ width: "72px" }} />  {/* Price */}
-                  <col style={{ width: "60px" }} />  {/* Odo */}
-                  <col style={{ width: "100px" }} /> {/* Color */}
-                  <col style={{ width: "90px" }} />  {/* Engine/Drivetrain */}
-                  <col style={{ width: "38px" }} />  {/* Cert */}
-                  <col style={{ width: "135px" }} /> {/* VIN */}
-                  <col style={{ width: "52px" }} />  {/* Type */}
-                  <col style={{ width: "40px" }} />  {/* Days */}
-                  <col style={{ width: "70px" }} />  {/* Recall */}
+                  <col style={{ width: "44px" }} />  {/* Stock */}
+                  <col style={{ width: "34px" }} />  {/* Year */}
+                  <col style={{ width: "40px" }} />  {/* Make */}
+                  <col style={{ width: "100px" }} /> {/* Model */}
+                  <col style={{ width: "62px" }} />  {/* Price */}
+                  <col style={{ width: "50px" }} />  {/* Odo */}
+                  <col style={{ width: "62px" }} />  {/* Color */}
+                  <col style={{ width: "58px" }} />  {/* Engine/Drivetrain */}
+                  <col style={{ width: "28px" }} />  {/* Cert */}
+                  <col style={{ width: "90px" }} />  {/* VIN */}
+                  <col style={{ width: "42px" }} />  {/* Type */}
+                  <col style={{ width: "32px" }} />  {/* Days */}
+                  <col style={{ width: "48px" }} />  {/* Recall */}
                 </colgroup>
                 <thead>
                   <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 1 }}>
@@ -779,8 +779,8 @@ export default function LotLedger() {
                       </td>
                       <td style={{ padding: "4px 5px", color: "#9A9C9E" }}>{r.drivetrain}</td>
                       <td style={{ padding: "4px 5px" }}>{r.certified ? "Yes" : ""}</td>
-                      <td className="lg-mono" style={{ padding: "4px 5px", fontSize: 13, whiteSpace: "nowrap" }}>{r.vin}</td>
-                      <td style={{ padding: "4px 5px", color: "#9A9C9E", whiteSpace: "nowrap" }}>{r.type}</td>
+                      <td className="lg-mono" style={{ padding: "4px 5px", fontSize: 12, wordBreak: "break-all" }}>{r.vin}</td>
+                      <td style={{ padding: "4px 5px", color: "#9A9C9E" }}>{r.type}</td>
                       <td className="lg-mono" style={{ padding: "4px 5px", color: "#9A9C9E" }}>{r.days ?? ""}</td>
                       <td style={{ padding: "4px 5px" }}>
                         {r.recall && (
