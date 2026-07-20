@@ -135,12 +135,40 @@ function classifyType(model) {
   return "Other";
 }
 
+// Shortens make names that would otherwise force the (intentionally narrow,
+// no-wrap) Make column to stretch wide — add more entries here as needed.
+const MAKE_SHORTENINGS = {
+  "mercedes-benz": "Mercedes",
+};
+function shortenMake(make) {
+  const m = (make || "").toString().trim();
+  return MAKE_SHORTENINGS[m.toLowerCase()] || m;
+}
+
+// Shortens long trim/package words inside Model text (whole-word, case
+// insensitive) so trims like "Atlas Cross Sport SE Technology" wrap to
+// fewer lines in the (intentionally narrow) Model column. Add more pairs
+// as you run into other long words.
+const MODEL_WORD_SHORTENINGS = {
+  "technology": "Tech",
+  "premium": "Prem",
+  "package": "Pkg",
+  "performance": "Perf",
+  "convenience": "Conv",
+  "advanced": "Adv",
+  "appearance": "Appr",
+};
+function shortenModelWords(model) {
+  const s = (model || "").toString();
+  return s.replace(/[A-Za-z]+/g, (word) => MODEL_WORD_SHORTENINGS[word.toLowerCase()] || word);
+}
+
 function normalizeLegacyRow(r) {
-  const model = (r.md ?? "").toString().trim();
+  const model = shortenModelWords((r.md ?? "").toString().trim());
   return {
     stock: r.s ?? "",
     year: r.y ?? "",
-    make: (r.mk ?? "").toString().trim(),
+    make: shortenMake(r.mk),
     model,
     type: classifyType(model),
     desc: r.de ?? "",
@@ -187,13 +215,15 @@ function getField(row, name) {
 // doesn't include a days-on-lot column (unlike the legacy CSV, which does).
 function normalizePricingRow(row) {
   const { year, make, model } = parseVehicleString(getField(row, "vehicle"));
+  const shortMake = shortenMake(make);
+  const shortModel = shortenModelWords(model);
   const classVal = (getField(row, "class") || "").toString();
   const certifiedVal = (getField(row, "certified") || "").toString();
   return {
     stock: getField(row, "stock #") ?? "",
     year,
-    make,
-    model,
+    make: shortMake,
+    model: shortModel,
     type: classVal.split(",")[0].trim() || "Other",
     desc: (getField(row, "body") || "").toString(),
     status: "", // not populated in this export — left blank rather than guessed
@@ -234,8 +264,8 @@ function normalizePricingViewRow(row) {
   return {
     stock: getField(row, "stock #") ?? "",
     year,
-    make,
-    model,
+    make: shortenMake(make),
+    model: shortenModelWords(model),
     type: classVal.split(",")[0].trim() || "Other",
     desc: (getField(row, "body") || "").toString(),
     status: "",
@@ -673,7 +703,7 @@ export default function LotLedger() {
                   <col style={{ width: "62px" }} />
                   <col style={{ width: "46px" }} />
                   <col style={{ width: "62px" }} />
-                  <col />
+                  <col style={{ width: "155px" }} />
                   <col />
                   <col />
                   <col />
