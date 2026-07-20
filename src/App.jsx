@@ -205,6 +205,7 @@ function normalizeLegacyRow(r) {
     vin: (r.v ?? "").toString().trim().toUpperCase(),
     days: parseNum(r.d),
     price: markUpPrice(parseMoney(r.p)),
+    priceMarked: true,
     certified: !!r.ce,
     recall: "",
     drivetrain: "",
@@ -259,6 +260,7 @@ function normalizePricingRow(row) {
     vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
     days: null, // this export doesn't include a days-on-lot column
     price: markUpPrice(parseMoney(getField(row, "price / % mkt"))),
+    priceMarked: true,
     certified: /^y/i.test(certifiedVal.trim()),
     recall: (getField(row, "recall status") || "").toString().trim(),
     drivetrain: "",
@@ -301,6 +303,7 @@ function normalizePricingViewRow(row) {
     vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
     days: daysSince(getField(row, "inventory date")),
     price: markUpPrice(parseMoney(getField(row, "price"))),
+    priceMarked: true,
     certified: /^y/i.test(certifiedVal.trim()),
     recall: (getField(row, "recall status icon small") || "").toString().trim(),
     drivetrain: engine && drivetrainType ? `${engine}/${drivetrainType}` : (engine || drivetrainType),
@@ -408,6 +411,8 @@ export default function LotLedger() {
         ...r,
         make: shortenMake(r.make),
         model: shortenModelWords(r.model),
+        price: r.priceMarked ? r.price : markUpPrice(r.price),
+        priceMarked: true,
       }));
       try {
         localStorage.setItem("lot-ledger-records", JSON.stringify(healed));
