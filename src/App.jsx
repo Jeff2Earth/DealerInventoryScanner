@@ -689,14 +689,18 @@ export default function LotLedger() {
 
               {showFilters && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8, alignItems: "start" }}>
-                  <MultiSelect label="Make" options={makes} selected={filters.make}
-                    onChange={(vals) => setFilters((f) => ({ ...f, make: vals }))} />
-                  <MultiSelect label="Model" options={models} selected={filters.model}
-                    onChange={(vals) => setFilters((f) => ({ ...f, model: vals }))} />
-                  <MultiSelect label="Type" options={types} selected={filters.type}
-                    onChange={(vals) => setFilters((f) => ({ ...f, type: vals }))} />
-                  <input className="lg-input" type="number" placeholder="Max odometer" value={filters.odoMax}
-                    onChange={(e) => setFilters((f) => ({ ...f, odoMax: e.target.value }))} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <MultiSelect label="Make" options={makes} selected={filters.make}
+                      onChange={(vals) => setFilters((f) => ({ ...f, make: vals }))} />
+                    <MultiSelect label="Model" options={models} selected={filters.model}
+                      onChange={(vals) => setFilters((f) => ({ ...f, model: vals }))} />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <MultiSelect label="Type" options={types} selected={filters.type}
+                      onChange={(vals) => setFilters((f) => ({ ...f, type: vals }))} />
+                    <input className="lg-input" type="number" placeholder="Max odometer" value={filters.odoMax}
+                      onChange={(e) => setFilters((f) => ({ ...f, odoMax: e.target.value }))} />
+                  </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                     <input className="lg-input" type="number" placeholder="Year min" value={filters.yearMin}
                       onChange={(e) => setFilters((f) => ({ ...f, yearMin: e.target.value }))} />
