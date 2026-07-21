@@ -377,7 +377,7 @@ function MultiSelect({ label, options, selected, onChange }) {
         <div style={{
           position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
           background: "#3D4354", border: "1px solid #6B7280", borderRadius: 6,
-          maxHeight: 230, overflowY: "auto", zIndex: 30, padding: 6,
+          maxHeight: 230, overflowY: "auto", zIndex: 50, padding: 6,
         }}>
           {selected.length > 0 && (
             <button type="button" onClick={() => onChange([])}
