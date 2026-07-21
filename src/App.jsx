@@ -46,6 +46,12 @@ function markUpPrice(price) {
   return price === null ? null : price + PRICE_MARKUP;
 }
 
+// New stock numbers are always exactly 5 numeric digits (e.g. "60528").
+// Used stock numbers start with P or T, and/or end in a letter (e.g. "A", "B").
+function isNewVehicle(r) {
+  return /^\d{5}$/.test((r.stock || "").toString().trim());
+}
+
 function parseNum(v) {
   if (v === null || v === undefined || v === "") return null;
   const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
@@ -470,6 +476,7 @@ export default function LotLedger() {
     priceMax: "",
     odoMax: "",
     certifiedOnly: false,
+    condition: "all", // "all" | "used"
   });
 
   async function processFile(file, scanDate) {
@@ -661,6 +668,7 @@ export default function LotLedger() {
       if (filters.priceMax && (r.price === null || r.price > parseFloat(filters.priceMax))) return false;
       if (filters.odoMax && (r.odometer === null || r.odometer > parseFloat(filters.odoMax))) return false;
       if (filters.certifiedOnly && !r.certified) return false;
+      if (filters.condition === "used" && isNewVehicle(r)) return false;
       return true;
     });
     out.sort((a, b) => {
@@ -948,16 +956,22 @@ export default function LotLedger() {
                     <input className="lg-input" type="number" placeholder="Price max ($)" value={filters.priceMax}
                       onChange={(e) => setFilters((f) => ({ ...f, priceMax: e.target.value }))} />
                   </div>
-                  <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "center", gap: 26, marginTop: 2 }}>
+                  <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 2, flexWrap: "wrap" }}>
+                    <button
+                      onClick={() => setFilters((f) => ({ ...f, condition: f.condition === "all" ? "used" : "all" }))}
+                      style={{ background: "none", border: "1px solid #3A3F49", color: "#9A9C9E", borderRadius: 6, padding: "5px 10px", fontSize: 13.5, cursor: "pointer" }}
+                    >
+                      {filters.condition === "all" ? "All" : "Used"}
+                    </button>
                     <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 15 }}>
                       <input type="checkbox" checked={filters.certifiedOnly}
                         onChange={(e) => setFilters((f) => ({ ...f, certifiedOnly: e.target.checked }))} />
-                      Certified only
+                      Certified
                     </label>
                     <button
                       onClick={() => setFilters({
                         search: "", make: [], model: [], type: [], status: [], recall: [], scanDate: [],
-                        yearMin: "", yearMax: "", priceMin: "", priceMax: "", odoMax: "", certifiedOnly: false,
+                        yearMin: "", yearMax: "", priceMin: "", priceMax: "", odoMax: "", certifiedOnly: false, condition: "all",
                       })}
                       style={{ background: "none", border: "1px solid #3A3F49", color: "#9A9C9E", borderRadius: 6, padding: "5px 10px", fontSize: 13.5, cursor: "pointer" }}
                     >
