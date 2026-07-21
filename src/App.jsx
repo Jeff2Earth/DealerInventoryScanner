@@ -669,7 +669,6 @@ export default function LotLedger() {
     };
     recognitionRef.current = recognition;
     recognition.start();
-    scheduleAutoStop();
     setListening(true);
   }
 
