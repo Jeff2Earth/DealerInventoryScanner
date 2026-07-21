@@ -461,6 +461,7 @@ export default function LotLedger() {
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef(null);
   const searchInputRef = useRef(null);
+  const userStoppedVoice = useRef(false);
   const edgeTouch = useRef({ startY: 0, startScrollTop: 0 });
   const leftStripRef = useRef(null);
   const rightStripRef = useRef(null);
@@ -629,6 +630,7 @@ export default function LotLedger() {
 
   function toggleVoiceSearch() {
     if (listening) {
+      userStoppedVoice.current = true;
       recognitionRef.current?.stop();
       return;
     }
@@ -640,6 +642,7 @@ export default function LotLedger() {
     // Blur whatever's currently focused (e.g. the search box itself) so
     // starting voice search can never bring up the on-screen keyboard.
     document.activeElement?.blur?.();
+    userStoppedVoice.current = false;
 
     const recognition = new SpeechRecognition();
     recognition.lang = "en-US";
@@ -649,7 +652,10 @@ export default function LotLedger() {
     let silenceTimer = null;
     const scheduleAutoStop = () => {
       clearTimeout(silenceTimer);
-      silenceTimer = setTimeout(() => recognition.stop(), 1000);
+      silenceTimer = setTimeout(() => {
+        userStoppedVoice.current = true;
+        recognition.stop();
+      }, 1000);
     };
 
     recognition.onresult = (e) => {
@@ -661,11 +667,20 @@ export default function LotLedger() {
     };
     recognition.onend = () => {
       clearTimeout(silenceTimer);
+      // Some browsers fire a "no-speech" error and end the session within
+      // the first second or two, before you've had a real chance to talk —
+      // if that happens and you didn't tap stop yourself, just listen again.
+      if (!userStoppedVoice.current) {
+        try { recognition.start(); return; } catch (err) { /* fall through to stopped state */ }
+      }
       setListening(false);
     };
-    recognition.onerror = () => {
+    recognition.onerror = (e) => {
       clearTimeout(silenceTimer);
+      if (e.error === "no-speech") return; // let onend's auto-restart handle it
+      userStoppedVoice.current = true;
       setListening(false);
+      if (e.error !== "aborted") alert("Voice search error: " + e.error);
     };
     recognitionRef.current = recognition;
     recognition.start();
