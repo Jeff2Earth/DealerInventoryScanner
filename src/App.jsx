@@ -368,7 +368,7 @@ function MultiSelect({ label, options, selected, onChange }) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="lg-input"
-        style={{ textAlign: "left", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", color: selected.length ? "#ECE7DC" : "#B4B8BF" }}
+        style={{ textAlign: "left", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", color: selected.length ? "#ECE7DC" : "#B4B8BF", position: "relative", zIndex: 50 }}
       >
         <span>{label}{selected.length > 0 ? ` (${selected.length})` : ""}</span>
         <ChevronDown size={13} style={{ opacity: 0.6, flexShrink: 0 }} />
@@ -453,6 +453,8 @@ export default function LotLedger() {
   const [driveLoading, setDriveLoading] = useState(false);
   const [driveError, setDriveError] = useState("");
   const edgeTouch = useRef({ startY: 0, startScrollTop: 0 });
+  const leftStripRef = useRef(null);
+  const rightStripRef = useRef(null);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -681,6 +683,36 @@ export default function LotLedger() {
     loadDriveScript();
   }, []);
 
+  // Keeps the two edge scroll-strips from ever overlapping the filters
+  // panel (search box, dropdowns, Hide/Show, Certified checkbox) above the
+  // table — they only cover from the table's current on-screen position
+  // down to the bottom, recalculated as the page scrolls or resizes.
+  useEffect(() => {
+    function updateStripBounds() {
+      const el = tableRef.current;
+      const top = el ? Math.max(0, el.getBoundingClientRect().top) : 0;
+      if (leftStripRef.current) leftStripRef.current.style.top = `${top}px`;
+      if (rightStripRef.current) rightStripRef.current.style.top = `${top}px`;
+    }
+    updateStripBounds();
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => { updateStripBounds(); ticking = false; });
+    };
+    const scrollEl = scrollRef.current;
+    scrollEl?.addEventListener("scroll", onScroll);
+    window.addEventListener("resize", onScroll);
+    const ro = new ResizeObserver(onScroll);
+    if (tableRef.current) ro.observe(tableRef.current);
+    return () => {
+      scrollEl?.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      ro.disconnect();
+    };
+  });
+
   function toggleSort(field) {
     if (sortField === field) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -882,11 +914,13 @@ export default function LotLedger() {
                 {filtered.length}/{totalCount} vehicles
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: showFilters ? 4 : -4, marginTop: -4, paddingRight: 16 }}>
-                <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 14, cursor: "pointer", padding: 18, margin: -18 }}>
-                  {showFilters ? "Hide" : "Show"}
-                </button>
-              </div>
+              {!showFilters && (
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -4, marginTop: -4, paddingRight: 32 }}>
+                  <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 14, cursor: "pointer", padding: 18, margin: -18, position: "relative", zIndex: 50 }}>
+                    Show
+                  </button>
+                </div>
+              )}
 
               {showFilters && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8, alignItems: "start", maxWidth: 640, margin: "0 auto" }}>
@@ -928,6 +962,9 @@ export default function LotLedger() {
                       style={{ background: "none", border: "1px solid #3A3F49", color: "#9A9C9E", borderRadius: 6, padding: "5px 10px", fontSize: 13.5, cursor: "pointer" }}
                     >
                       Clear search
+                    </button>
+                    <button onClick={() => setShowFilters(false)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 14, cursor: "pointer", padding: 12, margin: -12, position: "relative", zIndex: 50 }}>
+                      Hide
                     </button>
                   </div>
                 </div>
@@ -1046,6 +1083,7 @@ export default function LotLedger() {
       {["left", "right"].map((side) => (
         <div
           key={side}
+          ref={side === "left" ? leftStripRef : rightStripRef}
           onTouchStart={(e) => {
             edgeTouch.current.startY = e.touches[0].clientY;
             edgeTouch.current.startScrollTop = scrollRef.current.scrollTop;
