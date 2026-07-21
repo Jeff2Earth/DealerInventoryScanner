@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from "react";
 import * as XLSX from "xlsx";
-import { Upload, Search, Trash2, ChevronUp, ChevronDown, Loader2, AlertTriangle, X, Gauge, FileSpreadsheet, Download, FolderOpen } from "lucide-react";
+import { Upload, Search, Trash2, ChevronUp, ChevronDown, Loader2, AlertTriangle, X, Gauge, FileSpreadsheet, Download, FolderOpen, Mic } from "lucide-react";
 
 // ---- Google Drive integration ----
 // Lets "Cloud Drive" list files from one specific folder and import
@@ -458,6 +458,9 @@ export default function LotLedger() {
   const [driveFiles, setDriveFiles] = useState([]);
   const [driveLoading, setDriveLoading] = useState(false);
   const [driveError, setDriveError] = useState("");
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef(null);
+  const searchInputRef = useRef(null);
   const edgeTouch = useRef({ startY: 0, startScrollTop: 0 });
   const leftStripRef = useRef(null);
   const rightStripRef = useRef(null);
@@ -622,6 +625,52 @@ export default function LotLedger() {
     } else {
       setDriveError("Signed-in session expired — tap Cloud Drive again.");
     }
+  }
+
+  function toggleVoiceSearch() {
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Voice search isn't supported in this browser.");
+      return;
+    }
+    // Blur whatever's currently focused (e.g. the search box itself) so
+    // starting voice search can never bring up the on-screen keyboard.
+    document.activeElement?.blur?.();
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    let silenceTimer = null;
+    const scheduleAutoStop = () => {
+      clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(() => recognition.stop(), 1000);
+    };
+
+    recognition.onresult = (e) => {
+      let transcript = "";
+      for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      setFilters((f) => ({ ...f, search: transcript.trim() }));
+      searchInputRef.current?.blur?.();
+      scheduleAutoStop();
+    };
+    recognition.onend = () => {
+      clearTimeout(silenceTimer);
+      setListening(false);
+    };
+    recognition.onerror = () => {
+      clearTimeout(silenceTimer);
+      setListening(false);
+    };
+    recognitionRef.current = recognition;
+    recognition.start();
+    scheduleAutoStop();
+    setListening(true);
   }
 
   function clearAll() {
@@ -912,13 +961,27 @@ export default function LotLedger() {
             {/* Filters */}
             <div style={{ background: "#24272E", borderRadius: 10, padding: "10px 12px 8px" }}>
               {/* General search */}
-              <input
-                className="lg-input"
-                style={{ marginBottom: 4, padding: "6px 10px", textAlign: "center", maxWidth: 640, margin: "0 auto 4px", display: "block" }}
-                placeholder="Search anything (stock, VIN, model, color, price…)"
-                value={filters.search}
-                onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-              />
+              <div style={{ position: "relative", maxWidth: 640, margin: "0 auto 4px" }}>
+                <input
+                  ref={searchInputRef}
+                  className="lg-input"
+                  style={{ padding: "6px 34px 6px 10px", textAlign: "center" }}
+                  placeholder="Search anything (stock, VIN, model, color, price…)"
+                  value={filters.search}
+                  onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+                />
+                <button
+                  onClick={toggleVoiceSearch}
+                  title="Voice search"
+                  style={{
+                    position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)",
+                    background: "none", border: "none", cursor: "pointer", padding: 8,
+                    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2,
+                  }}
+                >
+                  <Mic size={16} color={listening ? "#F2A93B" : "#9A9C9E"} style={listening ? { animation: "micPulse 1s ease-in-out infinite" } : undefined} />
+                </button>
+              </div>
               <div style={{ textAlign: "center", fontSize: 13, color: "#9A9C9E", marginBottom: 8 }}>
                 {filtered.length}/{totalCount} vehicles
               </div>
@@ -1096,7 +1159,10 @@ export default function LotLedger() {
           </>
         )}
       </div>
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes micPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.15); } }
+      `}</style>
 
       {["left", "right"].map((side) => (
         <div
