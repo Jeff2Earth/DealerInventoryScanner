@@ -645,7 +645,7 @@ export default function LotLedger() {
   const filtered = useMemo(() => {
     let out = records.filter((r) => {
       if (filters.search) {
-        const s = filters.search.toLowerCase();
+        const terms = filters.search.toLowerCase().trim().split(/\s+/).filter(Boolean);
         const haystack = [
           r.stock, r.year, r.make, r.model, r.type, r.desc, r.status, r.recall,
           r.color, r.drivetrain, r.odometer, r.vin, r.days, r.price, r.certified ? "certified" : "",
@@ -654,7 +654,7 @@ export default function LotLedger() {
           .filter((v) => v !== null && v !== undefined)
           .join(" ")
           .toLowerCase();
-        if (!haystack.includes(s)) return false;
+        if (!terms.every((term) => haystack.includes(term))) return false;
       }
       if (filters.make.length && !filters.make.includes(r.make)) return false;
       if (filters.model.length && !filters.model.includes(r.model)) return false;
