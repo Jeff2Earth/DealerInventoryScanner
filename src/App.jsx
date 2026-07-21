@@ -524,6 +524,7 @@ export default function LotLedger() {
   const gotVoiceResult = useRef(false);
   const hasRetriedVoice = useRef(false);
   const edgeTouch = useRef({ startY: 0, startScrollTop: 0 });
+  const horizTouch = useRef({ startX: 0, startScrollLeft: 0 });
   const leftStripRef = useRef(null);
   const rightStripRef = useRef(null);
 
@@ -1264,6 +1265,21 @@ export default function LotLedger() {
                 )}
               </div>
             </div>
+
+            {/* Lets you keep scrolling the table horizontally even when a
+                narrow search result leaves lots of empty space below it. */}
+            <div
+              onTouchStart={(e) => {
+                horizTouch.current.startX = e.touches[0].clientX;
+                horizTouch.current.startScrollLeft = tableRef.current?.scrollLeft || 0;
+              }}
+              onTouchMove={(e) => {
+                if (!tableRef.current) return;
+                const dx = e.touches[0].clientX - horizTouch.current.startX;
+                tableRef.current.scrollLeft = horizTouch.current.startScrollLeft - dx;
+              }}
+              style={{ minHeight: "40vh", touchAction: "none" }}
+            />
           </>
         )}
       </div>
