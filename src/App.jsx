@@ -644,10 +644,15 @@ export default function LotLedger() {
       }, 1000);
     };
 
+    let finalTranscript = "";
     recognition.onresult = (e) => {
-      let transcript = "";
-      for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
-      setFilters((f) => ({ ...f, search: transcript.trim() }));
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const res = e.results[i];
+        if (res.isFinal) finalTranscript += res[0].transcript + " ";
+        else interim += res[0].transcript;
+      }
+      setFilters((f) => ({ ...f, search: (finalTranscript + interim).trim() }));
       searchInputRef.current?.blur?.();
       scheduleAutoStop();
     };
