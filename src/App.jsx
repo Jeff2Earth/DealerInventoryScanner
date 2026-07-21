@@ -882,8 +882,8 @@ export default function LotLedger() {
                 {filtered.length}/{totalCount} vehicles
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: showFilters ? 8 : 0 }}>
-                <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 14, cursor: "pointer", padding: 12, margin: -12 }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: showFilters ? 4 : -4, marginTop: -4, paddingRight: 16 }}>
+                <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 14, cursor: "pointer", padding: 18, margin: -18 }}>
                   {showFilters ? "Hide" : "Show"}
                 </button>
               </div>
@@ -1033,7 +1033,7 @@ export default function LotLedger() {
                     background: "none", border: "1px solid #3A3F49", color: "#C1502E", borderRadius: 6,
                     padding: "7px 12px", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
                   }}>
-                    <Trash2 size={13} /> Clear current import
+                    <Trash2 size={13} /> Clear inventory
                   </button>
                 )}
               </div>
