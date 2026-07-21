@@ -628,22 +628,8 @@ export default function LotLedger() {
     }
   }
 
-  function toggleVoiceSearch() {
-    if (listening) {
-      userStoppedVoice.current = true;
-      recognitionRef.current?.stop();
-      return;
-    }
+  function startVoiceSession() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Voice search isn't supported in this browser.");
-      return;
-    }
-    // Blur whatever's currently focused (e.g. the search box itself) so
-    // starting voice search can never bring up the on-screen keyboard.
-    document.activeElement?.blur?.();
-    userStoppedVoice.current = false;
-
     const recognition = new SpeechRecognition();
     recognition.lang = "en-US";
     recognition.continuous = true;
@@ -669,9 +655,12 @@ export default function LotLedger() {
       clearTimeout(silenceTimer);
       // Some browsers fire a "no-speech" error and end the session within
       // the first second or two, before you've had a real chance to talk —
-      // if that happens and you didn't tap stop yourself, just listen again.
+      // if that happens and you didn't tap stop yourself, start a brand new
+      // session (reusing the same recognition object here is unreliable
+      // across most mobile browsers).
       if (!userStoppedVoice.current) {
-        try { recognition.start(); return; } catch (err) { /* fall through to stopped state */ }
+        startVoiceSession();
+        return;
       }
       setListening(false);
     };
@@ -684,6 +673,24 @@ export default function LotLedger() {
     };
     recognitionRef.current = recognition;
     recognition.start();
+  }
+
+  function toggleVoiceSearch() {
+    if (listening) {
+      userStoppedVoice.current = true;
+      recognitionRef.current?.stop();
+      return;
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Voice search isn't supported in this browser.");
+      return;
+    }
+    // Blur whatever's currently focused (e.g. the search box itself) so
+    // starting voice search can never bring up the on-screen keyboard.
+    document.activeElement?.blur?.();
+    userStoppedVoice.current = false;
+    startVoiceSession();
     setListening(true);
   }
 
