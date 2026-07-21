@@ -476,7 +476,7 @@ export default function LotLedger() {
     priceMax: "",
     odoMax: "",
     certifiedOnly: false,
-    condition: "all", // "all" | "used"
+    condition: "all", // "all" | "used" | "new"
   });
 
   async function processFile(file, scanDate) {
@@ -669,6 +669,7 @@ export default function LotLedger() {
       if (filters.odoMax && (r.odometer === null || r.odometer > parseFloat(filters.odoMax))) return false;
       if (filters.certifiedOnly && !r.certified) return false;
       if (filters.condition === "used" && isNewVehicle(r)) return false;
+      if (filters.condition === "new" && !isNewVehicle(r)) return false;
       return true;
     });
     out.sort((a, b) => {
@@ -958,10 +959,13 @@ export default function LotLedger() {
                   </div>
                   <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 2, flexWrap: "wrap" }}>
                     <button
-                      onClick={() => setFilters((f) => ({ ...f, condition: f.condition === "all" ? "used" : "all" }))}
+                      onClick={() => setFilters((f) => ({
+                        ...f,
+                        condition: f.condition === "all" ? "used" : f.condition === "used" ? "new" : "all",
+                      }))}
                       style={{ background: "none", border: "1px solid #3A3F49", color: "#9A9C9E", borderRadius: 6, padding: "5px 10px", fontSize: 13.5, cursor: "pointer" }}
                     >
-                      {filters.condition === "all" ? "All" : "Used"}
+                      {filters.condition === "all" ? "All" : filters.condition === "used" ? "Used" : "New"}
                     </button>
                     <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 15 }}>
                       <input type="checkbox" checked={filters.certifiedOnly}
