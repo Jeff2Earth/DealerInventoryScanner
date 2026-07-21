@@ -1,3 +1,39 @@
+import { useState, useRef, useMemo, useEffect } from "react";
+import * as XLSX from "xlsx";
+import { Upload, Search, Trash2, ChevronUp, ChevronDown, Loader2, AlertTriangle, X, Gauge, FileSpreadsheet, Download, FolderOpen, Mic } from "lucide-react";
+
+// ---- Google Drive integration ----
+// Lets "Cloud Drive" list files from one specific folder and import
+// whichever one is tapped, using the same pipeline as a local upload.
+const GOOGLE_API_KEY = "AIzaSyB83DBxB4RhCKSVO204UAJwttYn9c5O7sM";
+const GOOGLE_CLIENT_ID = "188213564865-kccradb2a14ghtr4hkjsvmlmvan6f1h8.apps.googleusercontent.com";
+const GOOGLE_DRIVE_FOLDER_ID = "15FRZCsq1RHTn0Ur5B93bqv3MfKCC42kp";
+const GOOGLE_DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
+
+// ---- design tokens ----
+// bg: #1B1D22 (warm charcoal, not pure black)
+// panel: #24272E
+// paper row: #22252B / #26292F stripe
+// ink: #ECE7DC
+// muted ink: #9A9C9E
+// amber (in-stock): #F2A93B
+// teal (service/detail): #3FA796
+// rust (vendor/transit): #C1502E
+// slate-blue (line/borders): #3A3F49
+
+const STATUS_COLORS = {
+  "IN-STOCK": "#3FA796",
+  "SERVICE": "#F2A93B",
+  "DETAIL": "#7C8CD8",
+  "VENDOR": "#C1502E",
+  "IN-TRANSIT": "#C98BD9",
+};
+
+function statusColor(s) {
+  return STATUS_COLORS[(s || "").toUpperCase()] || "#9A9C9E";
+}
+
+function parseMoney(v) {
   if (v === null || v === undefined || v === "") return null;
   const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
   return isNaN(n) ? null : n;
@@ -734,7 +770,6 @@ export default function LotLedger() {
         const haystack = [
           r.stock, r.year, r.make, r.model, r.type, r.desc, r.status, r.recall,
           exteriorColor, r.drivetrain, r.odometer, r.vin, r.days, r.price, r.certified ? "certified" : "",
-          r.scanDate,
         ]
           .filter((v) => v !== null && v !== undefined)
           .join(" ")
