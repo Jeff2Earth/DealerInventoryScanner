@@ -52,6 +52,34 @@ function isNewVehicle(r) {
   return /^\d{5}$/.test((r.stock || "").toString().trim());
 }
 
+// Parses a search string into AND-of-OR groups: words joined by "or" belong
+// to the same group (any one of them can match); a plain space between
+// words (no "or") starts a new, separately-required group. So
+// "blue or red corvette" -> [["blue","red"], ["corvette"]] — meaning
+// (blue OR red) AND corvette. "white or gray toyota or honda" ->
+// [["white","gray"], ["toyota","honda"]] — (white OR gray) AND (toyota OR honda).
+function parseSearchGroups(query) {
+  const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const groups = [];
+  let current = [];
+  let prevWasOr = false;
+  for (const token of tokens) {
+    if (token === "or") {
+      prevWasOr = true;
+      continue;
+    }
+    if (current.length === 0 || prevWasOr) {
+      current.push(token);
+    } else {
+      groups.push(current);
+      current = [token];
+    }
+    prevWasOr = false;
+  }
+  if (current.length > 0) groups.push(current);
+  return groups;
+}
+
 function parseNum(v) {
   if (v === null || v === undefined || v === "") return null;
   const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
@@ -462,6 +490,8 @@ export default function LotLedger() {
   const recognitionRef = useRef(null);
   const searchInputRef = useRef(null);
   const userStoppedVoice = useRef(false);
+  const gotVoiceResult = useRef(false);
+  const hasRetriedVoice = useRef(false);
   const edgeTouch = useRef({ startY: 0, startScrollTop: 0 });
   const leftStripRef = useRef(null);
   const rightStripRef = useRef(null);
@@ -632,46 +662,28 @@ export default function LotLedger() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     recognition.lang = "en-US";
-    recognition.continuous = true;
-    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.interimResults = false;
 
-    let silenceTimer = null;
-    const scheduleAutoStop = () => {
-      clearTimeout(silenceTimer);
-      silenceTimer = setTimeout(() => {
-        userStoppedVoice.current = true;
-        recognition.stop();
-      }, 1000);
-    };
-
-    let finalTranscript = "";
     recognition.onresult = (e) => {
-      let interim = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const res = e.results[i];
-        if (res.isFinal) finalTranscript += res[0].transcript + " ";
-        else interim += res[0].transcript;
-      }
-      setFilters((f) => ({ ...f, search: (finalTranscript + interim).trim() }));
+      gotVoiceResult.current = true;
+      const transcript = e.results[0][0].transcript;
+      setFilters((f) => ({ ...f, search: transcript.trim() }));
       searchInputRef.current?.blur?.();
-      scheduleAutoStop();
     };
     recognition.onend = () => {
-      clearTimeout(silenceTimer);
-      // Some browsers fire a "no-speech" error and end the session within
-      // the first second or two, before you've had a real chance to talk —
-      // if that happens and you didn't tap stop yourself, start a brand new
-      // session (reusing the same recognition object here is unreliable
-      // across most mobile browsers).
-      if (!userStoppedVoice.current) {
+      // If the browser gave up before you'd said anything at all (a common
+      // false alarm on some phones), quietly try once more — but only once,
+      // so this can never turn into an endless restart/beep loop.
+      if (!userStoppedVoice.current && !gotVoiceResult.current && !hasRetriedVoice.current) {
+        hasRetriedVoice.current = true;
         startVoiceSession();
         return;
       }
       setListening(false);
     };
     recognition.onerror = (e) => {
-      clearTimeout(silenceTimer);
-      if (e.error === "no-speech") return; // let onend's auto-restart handle it
+      if (e.error === "no-speech") return; // onend handles the one retry
       userStoppedVoice.current = true;
       setListening(false);
       if (e.error !== "aborted") alert("Voice search error: " + e.error);
@@ -695,6 +707,8 @@ export default function LotLedger() {
     // starting voice search can never bring up the on-screen keyboard.
     document.activeElement?.blur?.();
     userStoppedVoice.current = false;
+    gotVoiceResult.current = false;
+    hasRetriedVoice.current = false;
     startVoiceSession();
     setListening(true);
   }
@@ -720,7 +734,7 @@ export default function LotLedger() {
   const filtered = useMemo(() => {
     let out = records.filter((r) => {
       if (filters.search) {
-        const terms = filters.search.toLowerCase().trim().split(/\s+/).filter(Boolean);
+        const groups = parseSearchGroups(filters.search);
         const haystack = [
           r.stock, r.year, r.make, r.model, r.type, r.desc, r.status, r.recall,
           r.color, r.drivetrain, r.odometer, r.vin, r.days, r.price, r.certified ? "certified" : "",
@@ -729,7 +743,8 @@ export default function LotLedger() {
           .filter((v) => v !== null && v !== undefined)
           .join(" ")
           .toLowerCase();
-        if (!terms.every((term) => haystack.includes(term))) return false;
+        const matches = groups.every((group) => group.some((term) => haystack.includes(term)));
+        if (!matches) return false;
       }
       if (filters.make.length && !filters.make.includes(r.make)) return false;
       if (filters.model.length && !filters.model.includes(r.model)) return false;
