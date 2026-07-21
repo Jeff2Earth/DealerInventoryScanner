@@ -41,6 +41,12 @@ function parseMoney(v) {
 
 // Added to every vehicle's price on import (not retroactive to already-saved
 // data). Change the number here, or set to 0 to turn it off.
+// Simple shared password gate — change this string any time you want a new
+// password. Once someone enters it correctly on a device, that device
+// won't be asked again (remembered via localStorage) unless they clear
+// their browser data.
+const APP_PASSWORD = "MMTROCKS";
+
 const PRICE_MARKUP = 2000;
 function markUpPrice(price) {
   return price === null ? null : price + PRICE_MARKUP;
@@ -433,6 +439,31 @@ function MultiSelect({ label, options, selected, onChange }) {
 }
 
 export default function LotLedger() {
+  const [unlocked, setUnlocked] = useState(() => {
+    try {
+      return localStorage.getItem("lot-ledger-unlocked") === "true";
+    } catch (e) {
+      return false;
+    }
+  });
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState(false);
+
+  function handleUnlock(e) {
+    e.preventDefault();
+    if (passwordInput === APP_PASSWORD) {
+      try {
+        localStorage.setItem("lot-ledger-unlocked", "true");
+      } catch (err) {
+        console.error("Couldn't save to this browser's storage", err);
+      }
+      setUnlocked(true);
+      setPasswordError(false);
+    } else {
+      setPasswordError(true);
+    }
+  }
+
   const [records, setRecords] = useState(() => {
     try {
       const saved = localStorage.getItem("lot-ledger-records");
@@ -735,9 +766,10 @@ export default function LotLedger() {
     let out = records.filter((r) => {
       if (filters.search) {
         const groups = parseSearchGroups(filters.search);
+        const exteriorColor = r.color ? r.color.split(" / ")[0] : r.color;
         const haystack = [
           r.stock, r.year, r.make, r.model, r.type, r.desc, r.status, r.recall,
-          r.color, r.drivetrain, r.odometer, r.vin, r.days, r.price, r.certified ? "certified" : "",
+          exteriorColor, r.drivetrain, r.odometer, r.vin, r.days, r.price, r.certified ? "certified" : "",
           r.scanDate,
         ]
           .filter((v) => v !== null && v !== undefined)
@@ -824,6 +856,42 @@ export default function LotLedger() {
   function SortIcon({ field }) {
     if (sortField !== field) return null;
     return sortDir === "asc" ? <ChevronUp size={13} style={{ display: "inline" }} /> : <ChevronDown size={13} style={{ display: "inline" }} />;
+  }
+
+  if (!unlocked) {
+    return (
+      <div style={{ height: "100vh", background: "#1E2027", color: "#ECE7DC", fontFamily: "'IBM Plex Sans', system-ui, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');`}</style>
+        <form onSubmit={handleUnlock} style={{ width: "100%", maxWidth: 320, textAlign: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 20 }}>
+            <Gauge size={24} color="#F2A93B" />
+            <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 700, margin: 0, letterSpacing: 1, color: "#F2A93B" }}>
+              The Lot Ledger
+            </h1>
+          </div>
+          <input
+            type="password"
+            autoFocus
+            value={passwordInput}
+            onChange={(e) => { setPasswordInput(e.target.value); setPasswordError(false); }}
+            placeholder="Password"
+            style={{
+              width: "100%", boxSizing: "border-box", background: "#3D4354", border: `1px solid ${passwordError ? "#C1502E" : "#6B7280"}`,
+              color: "#ECE7DC", borderRadius: 6, padding: "10px 12px", fontSize: 16, textAlign: "center", outline: "none", marginBottom: 12,
+            }}
+          />
+          {passwordError && (
+            <div style={{ color: "#C1502E", fontSize: 13.5, marginBottom: 12 }}>Incorrect password.</div>
+          )}
+          <button type="submit" style={{
+            width: "100%", background: "#F2A93B", border: "none", color: "#1E2027", fontWeight: 700,
+            borderRadius: 6, padding: "10px 12px", fontSize: 15, cursor: "pointer",
+          }}>
+            Unlock
+          </button>
+        </form>
+      </div>
+    );
   }
 
   return (
