@@ -1076,7 +1076,7 @@ export default function LotLedger() {
         .lg-input {
           background: #3D4354; border: 1px solid #6B7280; color: #ECE7DC;
           border-radius: 6px; padding: 7px 10px; font-size: 15px; font-family: 'IBM Plex Sans', sans-serif;
-          outline: none; width: 100%; box-sizing: border-box;
+          outline: none; width: 100%; box-sizing: border-box; position: relative; z-index: 45;
         }
         .lg-input:focus { border-color: #FFC15E; background: #454C60; }
         .lg-input::placeholder { color: #B4B8BF; }
@@ -1488,7 +1488,7 @@ export default function LotLedger() {
             top: 0,
             bottom: 0,
             [side]: 0,
-            width: 14,
+            width: 40,
             zIndex: 40,
             background: "transparent",
             touchAction: "none",
