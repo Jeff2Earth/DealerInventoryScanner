@@ -884,10 +884,14 @@ export default function LotLedger() {
     // Blur whatever's currently focused (e.g. the search box itself) so
     // starting voice search can never bring up the on-screen keyboard.
     document.activeElement?.blur?.();
-    // Clear out any existing search text before the mic activates, so the
-    // new voice query always starts clean instead of merging with whatever
-    // was there before.
-    setFilters((f) => ({ ...f, search: "" }));
+    // Clear every field a voice query can set — not just the search text —
+    // before the mic activates, so a stale year/price/mileage/condition
+    // from a previous voice search can't silently carry into the next one.
+    setFilters((f) => ({
+      ...f,
+      search: "", yearMin: "", yearMax: "", priceMin: "", priceMax: "",
+      odoMax: "", certifiedOnly: false, condition: "all",
+    }));
     userStoppedVoice.current = false;
     gotVoiceResult.current = false;
     hasRetriedVoice.current = false;
