@@ -105,6 +105,31 @@ const VOICE_BODY_ALIASES = {
   "minivan": "van",
 };
 
+// Speech-to-text (especially on iOS) sometimes spells out model names that
+// mix letters and numbers instead of hearing them as one word — "4Runner"
+// becomes "for e runner", "RAV4" becomes "rav for", "C-HR" becomes "c h r".
+// This fixes that in two passes: first collapse any run of single letters
+// separated by spaces back into one word, then map the common mishearings
+// (collapsed or not) to the spelling your inventory actually uses.
+const MODEL_PHONETIC_ALIASES = {
+  "four runner": "4runner", "fore runner": "4runner", "for runner": "4runner",
+  "4 runner": "4runner", "forerunner": "4runner", "fourrunner": "4runner", "forrunner": "4runner",
+  "rav four": "rav4", "rav for": "rav4", "rav 4": "rav4", "ravfour": "rav4",
+  "c h r": "c-hr", "see h r": "c-hr", "cehr": "c-hr", "chr": "c-hr",
+  "c r v": "cr-v", "see r v": "cr-v", "crv": "cr-v",
+  "h r v": "hr-v", "see h v": "hr-v", "hrv": "hr-v",
+};
+
+function fixPhoneticModelNames(t) {
+  // Pass 1: collapse spelled-out letter runs ("f o r e r u n n e r" -> "forerunner")
+  t = t.replace(/\b(?:[a-z]\s){2,}[a-z]\b/g, (match) => match.replace(/\s+/g, ""));
+  // Pass 2: map known mishearings to the correct model spelling
+  for (const [phonetic, canon] of Object.entries(MODEL_PHONETIC_ALIASES)) {
+    t = t.replace(new RegExp("\\b" + phonetic + "\\b", "g"), canon);
+  }
+  return t;
+}
+
 // Filler words people say naturally that would otherwise pollute the
 // free-text search ("show me a Toyota" -> just "toyota").
 const VOICE_STOPWORDS = ["please", "show me", "find me", "looking for", "i want", "i need", "do you have", "do we have"];
@@ -127,6 +152,7 @@ function wordsToNumber(str) {
 // left out of the patch, so anything already set stays as-is.
 function parseVoiceTranscript(transcript) {
   let t = " " + transcript.toLowerCase().trim() + " ";
+  t = fixPhoneticModelNames(t);
   const patch = {};
   let m;
 
