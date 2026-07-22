@@ -1319,7 +1319,7 @@ export default function LotLedger() {
             </div>
 
             {/* Table */}
-            <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
+            <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "auto", WebkitOverflowScrolling: "touch" }}>
               <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5 }}>
                 <colgroup>
                   <col style={{ width: "44px" }} />  {/* Stock */}
