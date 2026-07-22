@@ -921,8 +921,9 @@ export default function LotLedger() {
         ]
           .filter((v) => v !== null && v !== undefined)
           .join(" ")
-          .toLowerCase();
-        const matches = groups.every((group) => group.some((term) => haystack.includes(term)));
+          .toLowerCase()
+          .replace(/-/g, ""); // hyphens stripped so "F150" matches "F-150", "CRV" matches "CR-V", etc.
+        const matches = groups.every((group) => group.some((term) => haystack.includes(term.replace(/-/g, ""))));
         if (!matches) return false;
       }
       if (filters.make.length && !filters.make.includes(r.make)) return false;
