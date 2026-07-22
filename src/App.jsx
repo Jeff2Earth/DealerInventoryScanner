@@ -158,7 +158,13 @@ function parseVoiceTranscript(transcript) {
 
   // Price range / thresholds first, so those digits can't also get picked
   // up by the year check below.
-  if ((m = t.match(/(\d[\d,]*k?)\s*(?:to|-)\s*(\d[\d,]*k?)/))) {
+  if ((m = t.match(/(?:price\s*max|max\s*price)\s*(\d[\d,]*k?)/))) {
+    patch.priceMax = String(wordsToNumber(m[1]) ?? "");
+    t = t.replace(m[0], " ");
+  } else if ((m = t.match(/(?:price\s*min|min\s*price)\s*(\d[\d,]*k?)/))) {
+    patch.priceMin = String(wordsToNumber(m[1]) ?? "");
+    t = t.replace(m[0], " ");
+  } else if ((m = t.match(/(\d[\d,]*k?)\s*(?:to|-)\s*(\d[\d,]*k?)/))) {
     patch.priceMin = String(wordsToNumber(m[1]) ?? "");
     patch.priceMax = String(wordsToNumber(m[2]) ?? "");
     t = t.replace(m[0], " ");
