@@ -872,6 +872,7 @@ export default function LotLedger() {
         const haystack = [
           r.stock, r.year, r.make, r.model, r.type, r.desc, r.status, r.recall,
           exteriorColor, r.drivetrain, r.odometer, r.vin, r.days, r.price, r.certified ? "certified" : "",
+          isNewVehicle(r) ? "new" : "used",
         ]
           .filter((v) => v !== null && v !== undefined)
           .join(" ")
