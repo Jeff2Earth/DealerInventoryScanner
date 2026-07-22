@@ -1256,7 +1256,7 @@ export default function LotLedger() {
                     position: "absolute", left: 2, top: "50%", transform: "translateY(-50%)",
                     background: "none", border: "none", cursor: "pointer",
                     width: 44, height: 44, minWidth: 44, minHeight: 44,
-                    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2,
+                    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 46,
                   }}
                 >
                   <Mic size={24} color={listening ? "#F2A93B" : "#9A9C9E"} style={listening ? { animation: "micPulse 1s ease-in-out infinite" } : undefined} />
@@ -1268,7 +1268,7 @@ export default function LotLedger() {
                     position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)",
                     background: "none", border: "none", cursor: "pointer",
                     width: 44, height: 44, minWidth: 44, minHeight: 44,
-                    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2,
+                    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 46,
                   }}
                 >
                   <Mic size={24} color={listening ? "#F2A93B" : "#9A9C9E"} style={listening ? { animation: "micPulse 1s ease-in-out infinite" } : undefined} />
