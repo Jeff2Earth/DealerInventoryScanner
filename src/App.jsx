@@ -1165,7 +1165,7 @@ export default function LotLedger() {
       )}
 
       {/* Header */}
-      <div style={{ background: "#000000", padding: "20px 16px 0", textAlign: "center", position: "sticky", top: 0, zIndex: 30 }}>
+      <div style={{ background: "#000000", padding: "20px 16px 0", textAlign: "center", position: "sticky", top: 0, zIndex: 60 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
           <Gauge size={22} color="#E8C468" />
           <h1 className="lg-display" style={{ fontSize: 21, fontWeight: 700, margin: 0, letterSpacing: 2, color: "#E8C468", textTransform: "uppercase" }}>
@@ -1306,7 +1306,7 @@ export default function LotLedger() {
                         search: "", make: [], model: [], type: [], status: [], recall: [], scanDate: [],
                         yearMin: "", yearMax: "", priceMin: "", priceMax: "", odoMax: "", certifiedOnly: false, condition: "all",
                       })}
-                      style={{ background: "none", border: "1px solid #C1502E", color: "#C1502E", fontWeight: 700, borderRadius: 6, padding: "5px 10px", fontSize: 13.5, cursor: "pointer" }}
+                      style={{ background: "none", border: "1px solid #C1502E", color: "#C1502E", fontWeight: 400, borderRadius: 6, padding: "5px 10px", fontSize: 13.5, cursor: "pointer" }}
                     >
                       Clear search
                     </button>
