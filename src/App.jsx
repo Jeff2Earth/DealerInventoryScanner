@@ -86,6 +86,106 @@ function parseSearchGroups(query) {
   return groups;
 }
 
+// ---- Voice query normalization ----
+// Turns a spoken query ("Toyota or Honda under 25 low miles 26") into a
+// filters patch: price/year/mileage/condition/certified go straight into
+// their own filter fields; color and body-type slang get swapped to the
+// words your data actually uses; whatever's left over (make, model, other
+// words) falls through to the existing free-text search box untouched.
+
+const VOICE_COLOR_ALIASES = {
+  "charcoal": "black", "midnight": "black", "jet black": "black",
+  "pearl": "white", "snow": "white", "ivory": "white",
+  "grey": "gray",
+};
+
+const VOICE_BODY_ALIASES = {
+  "pickup": "truck", "cross over": "suv", "crossover": "suv",
+  "four door": "sedan", "two door": "coupe", "drop top": "convertible",
+  "minivan": "van",
+};
+
+// Filler words people say naturally that would otherwise pollute the
+// free-text search ("show me a Toyota" -> just "toyota").
+const VOICE_STOPWORDS = ["please", "show me", "find me", "looking for", "i want", "i need", "do you have", "do we have"];
+
+function wordsToNumber(str) {
+  const cleaned = str.toLowerCase().replace(/[$,]/g, "").trim();
+  if (/^\d+(\.\d+)?k$/.test(cleaned)) return Math.round(parseFloat(cleaned) * 1000);
+  if (/^\d+$/.test(cleaned)) {
+    const n = parseInt(cleaned, 10);
+    // "under 20" (dollars) means $20,000, not $20 — but a mileage caller
+    // strips "miles"/"k" before this runs, so this heuristic only applies
+    // to bare price numbers.
+    return n > 0 && n < 1000 ? n * 1000 : n;
+  }
+  return null;
+}
+
+// Parses a spoken transcript into a { ...filters patch } object. Merge the
+// result into your existing filters state; fields not mentioned are simply
+// left out of the patch, so anything already set stays as-is.
+function parseVoiceTranscript(transcript) {
+  let t = " " + transcript.toLowerCase().trim() + " ";
+  const patch = {};
+  let m;
+
+  // Price range / thresholds first, so those digits can't also get picked
+  // up by the year check below.
+  if ((m = t.match(/(\d[\d,]*k?)\s*(?:to|-)\s*(\d[\d,]*k?)/))) {
+    patch.priceMin = String(wordsToNumber(m[1]) ?? "");
+    patch.priceMax = String(wordsToNumber(m[2]) ?? "");
+    t = t.replace(m[0], " ");
+  } else if ((m = t.match(/under\s+(\d[\d,]*k?)(?!\s*(?:miles?|mi\b))/))) {
+    patch.priceMax = String(wordsToNumber(m[1]) ?? "");
+    t = t.replace(m[0], " ");
+  } else if ((m = t.match(/over\s+(\d[\d,]*k?)/))) {
+    patch.priceMin = String(wordsToNumber(m[1]) ?? "");
+    t = t.replace(m[0], " ");
+  }
+
+  // Mileage
+  if (/\blow miles\b|\blow mileage\b/.test(t)) {
+    patch.odoMax = "50000"; // tune this default threshold as needed
+    t = t.replace(/\blow miles\b|\blow mileage\b/, " ");
+  } else if ((m = t.match(/under\s+(\d[\d,]*)\s*(?:miles?|mi)\b/))) {
+    patch.odoMax = String(wordsToNumber(m[1]) ?? "");
+    t = t.replace(m[0], " ");
+  }
+
+  // Year — two-digit shorthand ("26") or full ("2026"). Runs after price
+  // and mileage are stripped out above so it can't grab those digits.
+  if ((m = t.match(/\b(20\d{2}|\d{2})\b/))) {
+    let y = parseInt(m[1], 10);
+    if (y < 100) y = y < 50 ? 2000 + y : 1900 + y; // adjust cutoff as your inventory ages
+    if (y >= 1990 && y <= 2035) {
+      patch.yearMin = String(y);
+      patch.yearMax = String(y);
+      t = t.replace(m[0], " ");
+    }
+  }
+
+  // Certified / condition
+  if (/\bcertified\b/.test(t)) patch.certifiedOnly = true;
+  if (/\bused\b/.test(t)) patch.condition = "used";
+  if (/\bnew\b/.test(t) && !/\bnews\b/.test(t)) patch.condition = "new";
+
+  // Color / body-type slang -> canonical words your data already contains,
+  // so they flow into the existing free-text AND/OR search correctly.
+  for (const [slang, canon] of Object.entries(VOICE_COLOR_ALIASES)) {
+    t = t.replace(new RegExp("\\b" + slang + "\\b", "g"), canon);
+  }
+  for (const [slang, canon] of Object.entries(VOICE_BODY_ALIASES)) {
+    t = t.replace(new RegExp("\\b" + slang + "\\b", "g"), canon);
+  }
+  for (const phrase of VOICE_STOPWORDS) {
+    t = t.replace(new RegExp("\\b" + phrase + "\\b", "g"), " ");
+  }
+
+  patch.search = t.replace(/\s+/g, " ").trim();
+  return patch;
+}
+
 function parseNum(v) {
   if (v === null || v === undefined || v === "") return null;
   const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
@@ -700,7 +800,8 @@ export default function LotLedger() {
     recognition.onresult = (e) => {
       gotVoiceResult.current = true;
       const transcript = e.results[0][0].transcript;
-      setFilters((f) => ({ ...f, search: transcript.trim() }));
+      const patch = parseVoiceTranscript(transcript);
+      setFilters((f) => ({ ...f, ...patch }));
       searchInputRef.current?.blur?.();
     };
     recognition.onend = () => {
