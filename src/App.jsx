@@ -1306,7 +1306,7 @@ export default function LotLedger() {
                         search: "", make: [], model: [], type: [], status: [], recall: [], scanDate: [],
                         yearMin: "", yearMax: "", priceMin: "", priceMax: "", odoMax: "", certifiedOnly: false, condition: "all",
                       })}
-                      style={{ background: "none", border: "1px solid #3A3F49", color: "#9A9C9E", borderRadius: 6, padding: "5px 10px", fontSize: 13.5, cursor: "pointer" }}
+                      style={{ background: "none", border: "1px solid #C1502E", color: "#C1502E", fontWeight: 700, borderRadius: 6, padding: "5px 10px", fontSize: 13.5, cursor: "pointer" }}
                     >
                       Clear search
                     </button>
