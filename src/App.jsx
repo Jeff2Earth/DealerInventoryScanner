@@ -884,6 +884,10 @@ export default function LotLedger() {
     // Blur whatever's currently focused (e.g. the search box itself) so
     // starting voice search can never bring up the on-screen keyboard.
     document.activeElement?.blur?.();
+    // Clear out any existing search text before the mic activates, so the
+    // new voice query always starts clean instead of merging with whatever
+    // was there before.
+    setFilters((f) => ({ ...f, search: "" }));
     userStoppedVoice.current = false;
     gotVoiceResult.current = false;
     hasRetriedVoice.current = false;
