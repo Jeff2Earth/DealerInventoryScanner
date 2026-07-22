@@ -652,6 +652,8 @@ export default function LotLedger() {
   const fileInputRef = useRef(null);
   const scrollRef = useRef(null);
   const tableRef = useRef(null);
+  const headerRef = useRef(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
   const driveTokenClient = useRef(null);
   const driveAccessToken = useRef(null);
   const [driveScriptReady, setDriveScriptReady] = useState(false);
@@ -958,6 +960,19 @@ export default function LotLedger() {
     loadDriveScript();
   }, []);
 
+  // Measures the sticky banner's actual rendered height so the table's
+  // column header row can stick just below it (rather than at top:0, which
+  // would put it underneath the banner instead of visible beneath it).
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const update = () => setHeaderHeight(el.getBoundingClientRect().height);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // Keeps the two edge scroll-strips from ever overlapping the filters
   // panel (search box, dropdowns, Hide/Show, Certified checkbox) above the
   // table — they only cover from the table's current on-screen position
@@ -1165,7 +1180,7 @@ export default function LotLedger() {
       )}
 
       {/* Header */}
-      <div style={{ background: "#000000", padding: "20px 16px 0", textAlign: "center", position: "sticky", top: 0, zIndex: 60 }}>
+      <div ref={headerRef} style={{ background: "#000000", padding: "20px 16px 0", textAlign: "center", position: "sticky", top: 0, zIndex: 60 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
           <Gauge size={22} color="#E8C468" />
           <h1 className="lg-display" style={{ fontSize: 21, fontWeight: 700, margin: 0, letterSpacing: 2, color: "#E8C468", textTransform: "uppercase" }}>
@@ -1337,7 +1352,7 @@ export default function LotLedger() {
                   <col style={{ width: "48px" }} />  {/* Recall */}
                 </colgroup>
                 <thead>
-                  <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 1 }}>
+                  <tr style={{ position: "sticky", top: headerHeight, background: "#1F2228", zIndex: 10 }}>
                     {[
                       ["stock", "Stock"], ["year", "Year"], ["make", "Make"], ["model", "Model"],
                       ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["drivetrain", "Engine/Drivetrain"], ["certified", "Cert"],
