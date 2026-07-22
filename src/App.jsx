@@ -974,24 +974,15 @@ export default function LotLedger() {
     return () => ro.disconnect();
   }, []);
 
-  // Keeps the two edge scroll-strips from ever overlapping the filters
-  // panel (search box, dropdowns, Hide/Show, Certified checkbox) above the
-  // table — they only cover from the table's current on-screen position
-  // down to the bottom, recalculated as the page scrolls or resizes.
-  //
-  // Also pins the table's column-header row just below the banner. This is
-  // done manually (via transform) rather than with CSS position:sticky,
-  // because a sticky <tr> inside a table that ALSO scrolls horizontally is
+  // Pins the table's column-header row just below the banner. This is done
+  // manually (via transform) rather than with CSS position:sticky, because
+  // a sticky <tr> inside a table that ALSO scrolls horizontally is
   // unreliable across browsers — overflow-x/overflow-y pairing rules mean
   // the table can silently become its own "nearest scrolling ancestor,"
   // breaking the sticky offset. Measuring real positions sidesteps that.
   useEffect(() => {
     function updateStripBounds() {
       const el = tableRef.current;
-      const top = el ? Math.max(0, el.getBoundingClientRect().top) : 0;
-      if (leftStripRef.current) leftStripRef.current.style.top = `${top}px`;
-      if (rightStripRef.current) rightStripRef.current.style.top = `${top}px`;
-
       const rowEl = theadRowRef.current;
       if (el && rowEl) {
         const tableRect = el.getBoundingClientRect();
@@ -1495,7 +1486,7 @@ export default function LotLedger() {
             top: 0,
             bottom: 0,
             [side]: 0,
-            width: 48,
+            width: 14,
             zIndex: 40,
             background: "transparent",
             touchAction: "none",
