@@ -342,7 +342,23 @@ const MODEL_WORD_SHORTENINGS = {
 };
 function shortenModelWords(model) {
   const s = (model || "").toString();
-  return s.replace(/[A-Za-z]+/g, (word) => MODEL_WORD_SHORTENINGS[word.toLowerCase()] || word);
+  const withoutEngineSize = stripEngineSizeTokens(s);
+  return withoutEngineSize.replace(/[A-Za-z]+/g, (word) => MODEL_WORD_SHORTENINGS[word.toLowerCase()] || word);
+}
+
+// The "Vehicle" description text this app parses Model out of is a loosely
+// maintained trim label — it sometimes carries an engine-size suffix like
+// "V6" or "I4" that's leftover from an older trim name and doesn't match
+// reality (e.g. a redesigned truck still labeled "V6" even though its real
+// engine, per the actual Engine column, is now a turbo 4-cylinder). Rather
+// than show a model name that might misstate the engine, strip these
+// tokens out of Model entirely — the Engine/Drivetrain column is the
+// single source of truth for what's actually under the hood.
+function stripEngineSizeTokens(s) {
+  return s
+    .replace(/\b[VIL]-?\d\b/gi, "") // V6, V-6, I4, L6, etc.
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 // Words that should always start a new line in the Model cell — e.g.
