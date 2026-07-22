@@ -974,24 +974,23 @@ export default function LotLedger() {
     return () => ro.disconnect();
   }, []);
 
-  // Pins the table's column-header row just below the banner. This is done
-  // manually (via transform) rather than with CSS position:sticky, because
-  // a sticky <tr> inside a table that ALSO scrolls horizontally is
-  // unreliable across browsers — overflow-x/overflow-y pairing rules mean
-  // the table can silently become its own "nearest scrolling ancestor,"
-  // breaking the sticky offset. Measuring real positions sidesteps that.
+  // The table's own header row uses CSS position:sticky (top:0, relative to
+  // the table's own scroll box) to stay pinned while scrolling *within* the
+  // table's row list — reliable here since the table scrolls both axes via
+  // "auto"/"auto", avoiding the visible/auto pairing quirk that broke this
+  // before. That native stickiness alone isn't enough once the table's own
+  // box has scrolled up under the separately-sticky banner, though — so this
+  // effect adds one extra JS-computed nudge on top: it measures the row's
+  // pure sticky position, then pushes it down just enough to clear the
+  // banner, composing the two independent sticky contexts correctly.
   useEffect(() => {
     function updateStripBounds() {
-      const el = tableRef.current;
       const rowEl = theadRowRef.current;
-      if (el && rowEl) {
-        const tableRect = el.getBoundingClientRect();
-        const rowHeight = rowEl.getBoundingClientRect().height || 0;
-        const maxTranslate = Math.max(0, tableRect.height - rowHeight);
-        const wantTranslate = headerHeight - tableRect.top;
-        const translate = Math.min(Math.max(0, wantTranslate), maxTranslate);
-        rowEl.style.transform = `translateY(${translate}px)`;
-      }
+      if (!rowEl) return;
+      rowEl.style.transform = "translateY(0px)";
+      const stickyTop = rowEl.getBoundingClientRect().top;
+      const extra = Math.max(0, headerHeight - stickyTop);
+      rowEl.style.transform = `translateY(${extra}px)`;
     }
     updateStripBounds();
     let ticking = false;
@@ -1001,12 +1000,15 @@ export default function LotLedger() {
       requestAnimationFrame(() => { updateStripBounds(); ticking = false; });
     };
     const scrollEl = scrollRef.current;
+    const tableEl = tableRef.current;
     scrollEl?.addEventListener("scroll", onScroll);
+    tableEl?.addEventListener("scroll", onScroll);
     window.addEventListener("resize", onScroll);
     const ro = new ResizeObserver(onScroll);
     if (tableRef.current) ro.observe(tableRef.current);
     return () => {
       scrollEl?.removeEventListener("scroll", onScroll);
+      tableEl?.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       ro.disconnect();
     };
@@ -1343,7 +1345,7 @@ export default function LotLedger() {
             </div>
 
             {/* Table */}
-            <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflowX: "auto", overflowY: "clip", WebkitOverflowScrolling: "touch" }}>
+            <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "auto", WebkitOverflowScrolling: "touch" }}>
               <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5 }}>
                 <colgroup>
                   <col style={{ width: "44px" }} />  {/* Stock */}
@@ -1361,7 +1363,7 @@ export default function LotLedger() {
                   <col style={{ width: "48px" }} />  {/* Recall */}
                 </colgroup>
                 <thead>
-                  <tr ref={theadRowRef} style={{ position: "relative", background: "#1F2228", zIndex: 10, willChange: "transform" }}>
+                  <tr ref={theadRowRef} style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 10, willChange: "transform" }}>
                     {[
                       ["stock", "Stock"], ["year", "Year"], ["make", "Make"], ["model", "Model"],
                       ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["drivetrain", "Engine/Drivetrain"], ["certified", "Cert"],
