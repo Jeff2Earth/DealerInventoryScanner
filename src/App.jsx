@@ -671,6 +671,7 @@ export default function LotLedger() {
   const horizTouch = useRef({ startX: 0, startScrollLeft: 0 });
   const leftStripRef = useRef(null);
   const rightStripRef = useRef(null);
+  const theadRowRef = useRef(null);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -977,12 +978,29 @@ export default function LotLedger() {
   // panel (search box, dropdowns, Hide/Show, Certified checkbox) above the
   // table — they only cover from the table's current on-screen position
   // down to the bottom, recalculated as the page scrolls or resizes.
+  //
+  // Also pins the table's column-header row just below the banner. This is
+  // done manually (via transform) rather than with CSS position:sticky,
+  // because a sticky <tr> inside a table that ALSO scrolls horizontally is
+  // unreliable across browsers — overflow-x/overflow-y pairing rules mean
+  // the table can silently become its own "nearest scrolling ancestor,"
+  // breaking the sticky offset. Measuring real positions sidesteps that.
   useEffect(() => {
     function updateStripBounds() {
       const el = tableRef.current;
       const top = el ? Math.max(0, el.getBoundingClientRect().top) : 0;
       if (leftStripRef.current) leftStripRef.current.style.top = `${top}px`;
       if (rightStripRef.current) rightStripRef.current.style.top = `${top}px`;
+
+      const rowEl = theadRowRef.current;
+      if (el && rowEl) {
+        const tableRect = el.getBoundingClientRect();
+        const rowHeight = rowEl.getBoundingClientRect().height || 0;
+        const maxTranslate = Math.max(0, tableRect.height - rowHeight);
+        const wantTranslate = headerHeight - tableRect.top;
+        const translate = Math.min(Math.max(0, wantTranslate), maxTranslate);
+        rowEl.style.transform = `translateY(${translate}px)`;
+      }
     }
     updateStripBounds();
     let ticking = false;
@@ -1334,7 +1352,7 @@ export default function LotLedger() {
             </div>
 
             {/* Table */}
-            <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflowX: "auto", overflowY: "visible", WebkitOverflowScrolling: "touch" }}>
+            <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflowX: "auto", overflowY: "clip", WebkitOverflowScrolling: "touch" }}>
               <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5 }}>
                 <colgroup>
                   <col style={{ width: "44px" }} />  {/* Stock */}
@@ -1352,7 +1370,7 @@ export default function LotLedger() {
                   <col style={{ width: "48px" }} />  {/* Recall */}
                 </colgroup>
                 <thead>
-                  <tr style={{ position: "sticky", top: headerHeight, background: "#1F2228", zIndex: 10 }}>
+                  <tr ref={theadRowRef} style={{ position: "relative", background: "#1F2228", zIndex: 10, willChange: "transform" }}>
                     {[
                       ["stock", "Stock"], ["year", "Year"], ["make", "Make"], ["model", "Model"],
                       ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["drivetrain", "Engine/Drivetrain"], ["certified", "Cert"],
