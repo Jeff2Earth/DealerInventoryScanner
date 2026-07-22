@@ -1165,7 +1165,7 @@ export default function LotLedger() {
       )}
 
       {/* Header */}
-      <div style={{ background: "#000000", padding: "20px 16px 0", textAlign: "center" }}>
+      <div style={{ background: "#000000", padding: "20px 16px 0", textAlign: "center", position: "sticky", top: 0, zIndex: 30 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
           <Gauge size={22} color="#E8C468" />
           <h1 className="lg-display" style={{ fontSize: 21, fontWeight: 700, margin: 0, letterSpacing: 2, color: "#E8C468", textTransform: "uppercase" }}>
@@ -1218,7 +1218,7 @@ export default function LotLedger() {
                 <input
                   ref={searchInputRef}
                   className="lg-input"
-                  style={{ padding: "6px 34px 6px 10px", textAlign: "center" }}
+                  style={{ padding: "10px 46px 10px 46px", textAlign: "center" }}
                   placeholder="Search anything (stock, VIN, model, color, price…)"
                   value={filters.search}
                   onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
@@ -1227,12 +1227,25 @@ export default function LotLedger() {
                   onClick={toggleVoiceSearch}
                   title="Voice search"
                   style={{
-                    position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)",
-                    background: "none", border: "none", cursor: "pointer", padding: 8,
+                    position: "absolute", left: 2, top: "50%", transform: "translateY(-50%)",
+                    background: "none", border: "none", cursor: "pointer",
+                    width: 44, height: 44, minWidth: 44, minHeight: 44,
                     display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2,
                   }}
                 >
-                  <Mic size={16} color={listening ? "#F2A93B" : "#9A9C9E"} style={listening ? { animation: "micPulse 1s ease-in-out infinite" } : undefined} />
+                  <Mic size={24} color={listening ? "#F2A93B" : "#9A9C9E"} style={listening ? { animation: "micPulse 1s ease-in-out infinite" } : undefined} />
+                </button>
+                <button
+                  onClick={toggleVoiceSearch}
+                  title="Voice search"
+                  style={{
+                    position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)",
+                    background: "none", border: "none", cursor: "pointer",
+                    width: 44, height: 44, minWidth: 44, minHeight: 44,
+                    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2,
+                  }}
+                >
+                  <Mic size={24} color={listening ? "#F2A93B" : "#9A9C9E"} style={listening ? { animation: "micPulse 1s ease-in-out infinite" } : undefined} />
                 </button>
               </div>
               <div style={{ textAlign: "center", fontSize: 13, color: "#9A9C9E", marginBottom: 8 }}>
