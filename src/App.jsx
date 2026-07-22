@@ -931,10 +931,26 @@ export default function LotLedger() {
           .join(" ")
           .toLowerCase()
           .replace(/-/g, ""); // hyphens stripped so "F150" matches "F-150", "CRV" matches "CR-V", etc.
+        const haystackWords = haystack.split(/[^a-z0-9]+/i).filter(Boolean);
         const matches = groups.every((group) => group.some((term) => {
           const t = term.replace(/-/g, "");
           const abbreviated = (MODEL_WORD_SHORTENINGS[term.toLowerCase()] || "").toLowerCase().replace(/-/g, "");
-          return haystack.includes(t) || (abbreviated && haystack.includes(abbreviated));
+          const isAlpha = /^[a-z]+$/i.test(t);
+          const matchOne = (candidate) => {
+            if (!candidate) return false;
+            if (isAlpha) {
+              // Letter-only terms must match the START of some word in the
+              // haystack — so short terms like "gr" match the standalone
+              // trim word "GR" but not letters buried mid-word in something
+              // like "Underground". Partial typing ("corv" -> "Corvette")
+              // still works since it's a genuine word-start match.
+              return haystackWords.some((w) => w.startsWith(candidate));
+            }
+            // Numbers/VINs/mixed terms keep plain substring matching, since
+            // partial matches anywhere (e.g. last 6 of a VIN) are wanted here.
+            return haystack.includes(candidate);
+          };
+          return matchOne(t) || matchOne(abbreviated);
         }));
         if (!matches) return false;
       }
