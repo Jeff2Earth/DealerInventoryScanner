@@ -153,6 +153,10 @@ function wordsToNumber(str) {
 function parseVoiceTranscript(transcript) {
   let t = " " + transcript.toLowerCase().trim() + " ";
   t = fixPhoneticModelNames(t);
+  // "30 grand" / "30,000 grand" -> "30k", so the price patterns below (which
+  // already handle the "k" suffix) consume the whole phrase instead of
+  // leaving the word "grand" behind as leftover search text.
+  t = t.replace(/(\d[\d,]*)\s*grand\b/gi, "$1k");
   const patch = {};
   let m;
 
