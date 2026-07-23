@@ -184,6 +184,9 @@ function parseVoiceTranscript(transcript) {
   if (/\blow miles\b|\blow mileage\b/.test(t)) {
     patch.odoMax = "50000"; // tune this default threshold as needed
     t = t.replace(/\blow miles\b|\blow mileage\b/, " ");
+  } else if ((m = t.match(/(?:max\s*miles|miles\s*max|max\s*mileage|mileage\s*max)\s*(\d[\d,]*k?)/))) {
+    patch.odoMax = String(wordsToNumber(m[1]) ?? "");
+    t = t.replace(m[0], " ");
   } else if ((m = t.match(/under\s+(\d[\d,]*)\s*(?:miles?|mi)\b/))) {
     patch.odoMax = String(wordsToNumber(m[1]) ?? "");
     t = t.replace(m[0], " ");
