@@ -1571,7 +1571,7 @@ export default function LotLedger() {
                 const dx = e.touches[0].clientX - horizTouch.current.startX;
                 tableRef.current.scrollLeft = horizTouch.current.startScrollLeft - dx;
               }}
-              style={{ minHeight: 24, touchAction: "none" }}
+              style={{ minHeight: headerHeight + 24, touchAction: "none" }}
             />
           </>
         )}
