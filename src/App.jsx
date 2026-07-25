@@ -150,8 +150,54 @@ function wordsToNumber(str) {
 // Parses a spoken transcript into a { ...filters patch } object. Merge the
 // result into your existing filters state; fields not mentioned are simply
 // left out of the patch, so anything already set stays as-is.
-function parseVoiceTranscript(transcript) {
+// Translates common Spanish car-search vocabulary into the English words
+// the rest of the parser already understands (price/mileage/color/condition
+// logic), so Spanish voice search reuses the same pipeline instead of
+// needing its own separate set of rules. Make/model names are left as-is
+// since they're generally said the same way in both languages.
+const SPANISH_TO_ENGLISH = {
+  // price
+  "precio": "price", "maximo": "max", "máximo": "max", "minimo": "min", "mínimo": "min",
+  "menos de": "under", "bajo": "under", "por debajo de": "under",
+  "mas de": "over", "más de": "over", "arriba de": "over", "sobre": "over",
+  // mileage
+  "millas": "miles", "millaje": "mileage", "kilometraje": "mileage",
+  "pocas millas": "low miles",
+  // condition
+  "nuevo": "new", "nueva": "new", "usado": "used", "usada": "used", "certificado": "certified", "certificada": "certified",
+  // colors
+  "negro": "black", "negra": "black", "blanco": "white", "blanca": "white",
+  "plata": "silver", "plateado": "silver", "gris": "gray",
+  "rojo": "red", "roja": "red", "azul": "blue", "verde": "green",
+  // body types
+  "camioneta": "truck", "camión": "truck", "camion": "truck",
+  "todoterreno": "suv", "sedán": "sedan", "sedan": "sedan",
+  "cupé": "coupe", "cupe": "coupe", "furgoneta": "van", "convertible": "convertible",
+  // year
+  "año": "year", "ano": "year",
+};
+
+function translateSpanishTerms(t) {
+  let out = t;
+  // "25 mil" -> "25k", attached directly (no space) so it's consumed
+  // cleanly by the price/mileage regexes the same way "30 grand" is.
+  out = out.replace(/(\d[\d,]*)\s*(?:mil|mill)\b/gi, "$1k");
+  // Multi-word phrases first, so e.g. "menos de" becomes "under" as a whole
+  // before any single-word pass could partially match inside it.
+  const phrases = Object.keys(SPANISH_TO_ENGLISH).filter((k) => k.includes(" ")).sort((a, b) => b.length - a.length);
+  for (const phrase of phrases) {
+    out = out.replace(new RegExp(`\\b${phrase}\\b`, "gi"), SPANISH_TO_ENGLISH[phrase]);
+  }
+  for (const [es, en] of Object.entries(SPANISH_TO_ENGLISH)) {
+    if (es.includes(" ")) continue;
+    out = out.replace(new RegExp(`\\b${es}\\b`, "gi"), en);
+  }
+  return out;
+}
+
+function parseVoiceTranscript(transcript, voiceLang) {
   let t = " " + transcript.toLowerCase().trim() + " ";
+  if (voiceLang && voiceLang.startsWith("es")) t = translateSpanishTerms(t);
   t = fixPhoneticModelNames(t);
   // "30 grand" / "30,000 grand" -> "30k", so the price patterns below (which
   // already handle the "k" suffix) consume the whole phrase instead of
@@ -684,6 +730,7 @@ export default function LotLedger() {
   const [driveLoading, setDriveLoading] = useState(false);
   const [driveError, setDriveError] = useState("");
   const [listening, setListening] = useState(false);
+  const [voiceLang, setVoiceLang] = useState("en-US"); // "en-US" | "es-US"
   const recognitionRef = useRef(null);
   const searchInputRef = useRef(null);
   const userStoppedVoice = useRef(false);
@@ -860,14 +907,14 @@ export default function LotLedger() {
   function startVoiceSession() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
+    recognition.lang = voiceLang;
     recognition.continuous = false;
     recognition.interimResults = false;
 
     recognition.onresult = (e) => {
       gotVoiceResult.current = true;
       const transcript = e.results[0][0].transcript;
-      const patch = parseVoiceTranscript(transcript);
+      const patch = parseVoiceTranscript(transcript, voiceLang);
       setFilters((f) => ({ ...f, ...patch }));
       searchInputRef.current?.blur?.();
     };
@@ -1295,7 +1342,7 @@ export default function LotLedger() {
                 <input
                   ref={searchInputRef}
                   className="lg-input"
-                  style={{ padding: "10px 46px 10px 46px", textAlign: "center" }}
+                  style={{ padding: "10px 92px 10px 46px", textAlign: "center" }}
                   placeholder="Search anything (stock, VIN, model, color, price…)"
                   value={filters.search}
                   onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
@@ -1312,18 +1359,30 @@ export default function LotLedger() {
                 >
                   <Mic size={24} color={listening ? "#F2A93B" : "#9A9C9E"} style={listening ? { animation: "micPulse 1s ease-in-out infinite" } : undefined} />
                 </button>
-                <button
-                  onClick={toggleVoiceSearch}
-                  title="Voice search"
-                  style={{
-                    position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)",
-                    background: "none", border: "none", cursor: "pointer",
-                    width: 44, height: 44, minWidth: 44, minHeight: 44,
-                    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 46,
-                  }}
-                >
-                  <Mic size={24} color={listening ? "#F2A93B" : "#9A9C9E"} style={listening ? { animation: "micPulse 1s ease-in-out infinite" } : undefined} />
-                </button>
+                <div style={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", gap: 2, zIndex: 46 }}>
+                  <button
+                    onClick={() => setVoiceLang((l) => (l === "en-US" ? "es-US" : "en-US"))}
+                    title="Voice search language"
+                    style={{
+                      background: "none", border: "1px solid #3A3F49", color: "#9A9C9E",
+                      borderRadius: 5, padding: "3px 5px", fontSize: 10.5, fontWeight: 600,
+                      cursor: "pointer", lineHeight: 1, minHeight: 30,
+                    }}
+                  >
+                    {voiceLang === "en-US" ? "EN" : "ES"}
+                  </button>
+                  <button
+                    onClick={toggleVoiceSearch}
+                    title="Voice search"
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      width: 40, height: 44, minWidth: 40, minHeight: 44,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <Mic size={24} color={listening ? "#F2A93B" : "#9A9C9E"} style={listening ? { animation: "micPulse 1s ease-in-out infinite" } : undefined} />
+                  </button>
+                </div>
               </div>
               <div style={{ textAlign: "center", fontSize: 13, color: "#9A9C9E", marginBottom: 8 }}>
                 {filtered.length}/{totalCount} vehicles
