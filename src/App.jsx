@@ -1113,37 +1113,31 @@ export default function LotLedger() {
   });
 
   // On the table itself: the first upward swipe (while the filters panel is
-  // still visible) collapses the page up so the table sits flush under the
-  // banner — maximizing screen space for data — rather than scrolling the
-  // table's own row list first. Once the panel is fully collapsed, control
-  // is handed back to normal table scrolling for the rest of that same
-  // gesture. Downward swipes are never intercepted here — the menu only
-  // comes back via the edge strips or by scrolling back up past the top of
-  // the table (the existing scroll-chaining behavior).
+  // still visible) triggers one clean animated scroll straight to the
+  // fully-collapsed position (table flush under the banner), rather than
+  // tracking the finger in real time — real-time hand-off between our own
+  // scroll control and the browser's native table scrolling proved fragile
+  // (could get stuck partway through). Downward swipes are never
+  // intercepted — the menu only comes back via the edge strips or by
+  // scrolling back up past the top of the table (existing scroll-chaining).
   useEffect(() => {
     const el = tableRef.current;
     if (!el) return;
-    const touch = { startY: 0, startScrollTop: 0, cap: 0, active: false, capped: false };
+    const touch = { startY: 0, triggered: false };
     function onStart(e) {
       touch.startY = e.touches[0].clientY;
-      touch.startScrollTop = scrollRef.current?.scrollTop || 0;
-      const tableRect = el.getBoundingClientRect();
-      touch.cap = touch.startScrollTop + Math.max(0, tableRect.top - headerHeight);
-      touch.active = touch.startScrollTop < touch.cap;
-      touch.capped = false;
+      touch.triggered = false;
     }
     function onMove(e) {
-      if (!touch.active || touch.capped) return;
+      if (touch.triggered) return;
       const dy = e.touches[0].clientY - touch.startY;
-      if (dy >= 0) return; // downward swipe — leave to native/chaining behavior
-      const wantScrollTop = touch.startScrollTop - dy;
-      if (wantScrollTop >= touch.cap) {
-        if (scrollRef.current) scrollRef.current.scrollTop = touch.cap;
-        touch.capped = true; // panel fully collapsed — release control for the rest of this gesture
-        return;
-      }
+      if (dy >= -8) return; // not an intentional upward swipe yet
+      const tableRect = el.getBoundingClientRect();
+      const needed = Math.max(0, tableRect.top - headerHeight);
+      if (needed <= 0) return; // already fully collapsed — let native table scroll handle it
+      touch.triggered = true;
       e.preventDefault();
-      if (scrollRef.current) scrollRef.current.scrollTop = wantScrollTop;
+      scrollRef.current?.scrollBy({ top: needed, behavior: "smooth" });
     }
     el.addEventListener("touchstart", onStart, { passive: true });
     el.addEventListener("touchmove", onMove, { passive: false });
