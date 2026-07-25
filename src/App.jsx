@@ -505,6 +505,15 @@ function normalizePricingViewRow(row) {
   };
 }
 
+// Real stock numbers on this lot are short (e.g. "60593", "P7362",
+// "60438A"). Anything containing "*" or longer than 9 characters is treated
+// as a stale factory/order allocation placeholder rather than a vehicle
+// actually on the lot, and filtered out at import time.
+function isStaleAllocation(r) {
+  const stock = (r.stock || "").toString();
+  return stock.includes("*") || stock.length > 9;
+}
+
 // Reads a file (legacy report CSV, or a native .xlsx/.xls pricing export)
 // and returns a flat array of normalized vehicle records — no scanDate yet,
 // that's attached by the caller.
@@ -513,16 +522,16 @@ async function extractRows(file) {
   if (name.endsWith(".csv")) {
     const text = await readFileAsText(file);
     const raw = parseCSV(text).filter((r) => r.v);
-    return raw.map(normalizeLegacyRow);
+    return raw.map(normalizeLegacyRow).filter((r) => r.vin && !isStaleAllocation(r));
   }
   const buf = await readFileAsArrayBuffer(file);
   const wb = XLSX.read(buf, { type: "array", cellDates: true });
   const sheet = wb.Sheets[wb.SheetNames[0]];
   const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
   if (json.length && getField(json[0], "inventory date") !== undefined) {
-    return json.map(normalizePricingViewRow).filter((r) => r.vin);
+    return json.map(normalizePricingViewRow).filter((r) => r.vin && !isStaleAllocation(r));
   }
-  return json.map(normalizePricingRow).filter((r) => r.vin);
+  return json.map(normalizePricingRow).filter((r) => r.vin && !isStaleAllocation(r));
 }
 
 function csvEscape(v) {
