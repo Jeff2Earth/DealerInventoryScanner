@@ -1167,7 +1167,7 @@ export default function LotLedger() {
       const requiredAdditionalScroll = Math.max(0, tableTop - headerHeight);
       const availableWithoutFiller = scrollEl.scrollHeight - scrollEl.clientHeight - scrollEl.scrollTop;
       const deficit = Math.max(0, requiredAdditionalScroll - availableWithoutFiller);
-      fillerEl.style.minHeight = `${Math.max(24, deficit + 24)}px`;
+      fillerEl.style.minHeight = `${Math.max(4, deficit)}px`;
     }
     updateFillerHeight();
     window.addEventListener("resize", updateFillerHeight);
