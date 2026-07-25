@@ -741,6 +741,8 @@ export default function LotLedger() {
   const leftStripRef = useRef(null);
   const rightStripRef = useRef(null);
   const theadRowRef = useRef(null);
+  const filtersRef = useRef(null);
+  const fillerRef = useRef(null);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -1089,6 +1091,24 @@ export default function LotLedger() {
       const stickyTop = rowEl.getBoundingClientRect().top;
       const extra = Math.max(0, headerHeight - stickyTop);
       rowEl.style.transform = `translateY(${extra}px)`;
+
+      // Make sure there's always enough scroll room to bring the table
+      // flush under the banner, however short the filtered list is. Measure
+      // the actual gap directly (temporarily zeroing the filler's own
+      // contribution first, since it would otherwise skew the measurement)
+      // rather than guessing a fixed number.
+      const scrollEl = scrollRef.current;
+      const tableEl = tableRef.current;
+      const fillerEl = fillerRef.current;
+      if (scrollEl && tableEl && fillerEl) {
+        const prevFillerHeight = fillerEl.getBoundingClientRect().height;
+        const tableTop = tableEl.getBoundingClientRect().top;
+        const requiredAdditionalScroll = Math.max(0, tableTop - headerHeight);
+        const availableWithoutFiller =
+          scrollEl.scrollHeight - prevFillerHeight - scrollEl.clientHeight - scrollEl.scrollTop;
+        const deficit = Math.max(0, requiredAdditionalScroll - availableWithoutFiller);
+        fillerEl.style.minHeight = `${Math.max(24, deficit + 24)}px`;
+      }
     }
     updateStripBounds();
     let ticking = false;
@@ -1369,7 +1389,7 @@ export default function LotLedger() {
         {totalCount > 0 && (
           <>
             {/* Filters */}
-            <div style={{ background: "#24272E", borderRadius: 10, padding: "10px 12px 8px" }}>
+            <div ref={filtersRef} style={{ background: "#24272E", borderRadius: 10, padding: "10px 12px 8px" }}>
               {/* General search */}
               <div style={{ position: "relative", maxWidth: 640, margin: "0 auto 4px" }}>
                 <input
@@ -1595,6 +1615,7 @@ export default function LotLedger() {
             {/* Lets you keep scrolling the table horizontally even when a
                 narrow search result leaves lots of empty space below it. */}
             <div
+              ref={fillerRef}
               onTouchStart={(e) => {
                 horizTouch.current.startX = e.touches[0].clientX;
                 horizTouch.current.startScrollLeft = tableRef.current?.scrollLeft || 0;
@@ -1604,7 +1625,7 @@ export default function LotLedger() {
                 const dx = e.touches[0].clientX - horizTouch.current.startX;
                 tableRef.current.scrollLeft = horizTouch.current.startScrollLeft - dx;
               }}
-              style={{ minHeight: headerHeight + 24, touchAction: "none" }}
+              style={{ minHeight: 24, touchAction: "none" }}
             />
           </>
         )}
