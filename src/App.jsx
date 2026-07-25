@@ -1114,31 +1114,6 @@ export default function LotLedger() {
     };
   });
 
-  // On the table itself: whenever its own internal scroll moves away from 0
-  // while the filters panel is still visible, immediately snap it back and
-  // forward that same motion to the outer page scroll instead — so the
-  // first scroll on the data body collapses the menu up under the banner
-  // rather than scrolling the table's own rows. This reacts to the actual
-  // scroll position changing (a native 'scroll' event) rather than trying
-  // to intercept the touch gesture beforehand, which loses the race against
-  // Chrome committing to native scrolling before our JS can respond.
-  useEffect(() => {
-    const el = tableRef.current;
-    const scrollEl = scrollRef.current;
-    if (!el || !scrollEl) return;
-    function onTableScroll() {
-      if (el.scrollTop <= 0) return;
-      const tableRect = el.getBoundingClientRect();
-      const needed = Math.max(0, tableRect.top - headerHeight);
-      if (needed <= 0) return; // already flush under the banner — let the table scroll normally
-      const consumed = el.scrollTop;
-      el.scrollTop = 0;
-      scrollEl.scrollTop += Math.min(consumed, needed);
-    }
-    el.addEventListener("scroll", onTableScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onTableScroll);
-  }, [headerHeight]);
-
   function toggleSort(field) {
     if (sortField === field) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
