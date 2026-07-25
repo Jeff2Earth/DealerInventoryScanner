@@ -1115,9 +1115,7 @@ export default function LotLedger() {
   // On the table itself: the first upward swipe (while the filters panel is
   // still visible) triggers one clean animated scroll straight to the
   // fully-collapsed position (table flush under the banner), rather than
-  // tracking the finger in real time — real-time hand-off between our own
-  // scroll control and the browser's native table scrolling proved fragile
-  // (could get stuck partway through). Downward swipes are never
+  // tracking the finger in real time. Downward swipes are never
   // intercepted — the menu only comes back via the edge strips or by
   // scrolling back up past the top of the table (existing scroll-chaining).
   useEffect(() => {
