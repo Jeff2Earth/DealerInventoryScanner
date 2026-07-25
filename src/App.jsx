@@ -1091,24 +1091,6 @@ export default function LotLedger() {
       const stickyTop = rowEl.getBoundingClientRect().top;
       const extra = Math.max(0, headerHeight - stickyTop);
       rowEl.style.transform = `translateY(${extra}px)`;
-
-      // Make sure there's always enough scroll room to bring the table
-      // flush under the banner, however short the filtered list is. Measure
-      // the actual gap directly (temporarily zeroing the filler's own
-      // contribution first, since it would otherwise skew the measurement)
-      // rather than guessing a fixed number.
-      const scrollEl = scrollRef.current;
-      const tableEl = tableRef.current;
-      const fillerEl = fillerRef.current;
-      if (scrollEl && tableEl && fillerEl) {
-        const prevFillerHeight = fillerEl.getBoundingClientRect().height;
-        const tableTop = tableEl.getBoundingClientRect().top;
-        const requiredAdditionalScroll = Math.max(0, tableTop - headerHeight);
-        const availableWithoutFiller =
-          scrollEl.scrollHeight - prevFillerHeight - scrollEl.clientHeight - scrollEl.scrollTop;
-        const deficit = Math.max(0, requiredAdditionalScroll - availableWithoutFiller);
-        fillerEl.style.minHeight = `${Math.max(24, deficit + 24)}px`;
-      }
     }
     updateStripBounds();
     let ticking = false;
@@ -1164,6 +1146,33 @@ export default function LotLedger() {
       el.removeEventListener("touchmove", onMove);
     };
   }, [headerHeight]);
+
+  // Sizes the bottom filler just enough to guarantee the table can always
+  // be scrolled flush under the banner, however short the filtered list is.
+  // Deliberately NOT tied to scroll position — only to things that actually
+  // change the required amount (a new search, or the viewport resizing) —
+  // so there's no way for this to compound/drift the way a per-scroll
+  // recalculation could.
+  useEffect(() => {
+    function updateFillerHeight() {
+      const scrollEl = scrollRef.current;
+      const tableEl = tableRef.current;
+      const fillerEl = fillerRef.current;
+      if (!scrollEl || !tableEl || !fillerEl) return;
+      // Collapse the filler first so its own size can't skew the
+      // measurement, then force a synchronous reflow before reading layout.
+      fillerEl.style.minHeight = "0px";
+      void fillerEl.offsetHeight;
+      const tableTop = tableEl.getBoundingClientRect().top;
+      const requiredAdditionalScroll = Math.max(0, tableTop - headerHeight);
+      const availableWithoutFiller = scrollEl.scrollHeight - scrollEl.clientHeight - scrollEl.scrollTop;
+      const deficit = Math.max(0, requiredAdditionalScroll - availableWithoutFiller);
+      fillerEl.style.minHeight = `${Math.max(24, deficit + 24)}px`;
+    }
+    updateFillerHeight();
+    window.addEventListener("resize", updateFillerHeight);
+    return () => window.removeEventListener("resize", updateFillerHeight);
+  }, [headerHeight, filtered.length]);
 
   function toggleSort(field) {
     if (sortField === field) {
