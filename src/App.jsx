@@ -1114,65 +1114,30 @@ export default function LotLedger() {
     };
   });
 
-  // On the table itself: the first upward swipe (while the filters panel is
-  // still visible) triggers one clean animated scroll straight to the
-  // fully-collapsed position (table flush under the banner), rather than
-  // tracking the finger in real time. Downward swipes are never
-  // intercepted — the menu only comes back via the edge strips or by
-  // scrolling back up past the top of the table (existing scroll-chaining).
+  // On the table itself: whenever its own internal scroll moves away from 0
+  // while the filters panel is still visible, immediately snap it back and
+  // forward that same motion to the outer page scroll instead — so the
+  // first scroll on the data body collapses the menu up under the banner
+  // rather than scrolling the table's own rows. This reacts to the actual
+  // scroll position changing (a native 'scroll' event) rather than trying
+  // to intercept the touch gesture beforehand, which loses the race against
+  // Chrome committing to native scrolling before our JS can respond.
   useEffect(() => {
     const el = tableRef.current;
-    if (!el) return;
-    const touch = { startY: 0, triggered: false };
-    function onStart(e) {
-      touch.startY = e.touches[0].clientY;
-      touch.triggered = false;
-    }
-    function onMove(e) {
-      if (touch.triggered) return;
-      const dy = e.touches[0].clientY - touch.startY;
-      if (dy >= -8) return; // not an intentional upward swipe yet
+    const scrollEl = scrollRef.current;
+    if (!el || !scrollEl) return;
+    function onTableScroll() {
+      if (el.scrollTop <= 0) return;
       const tableRect = el.getBoundingClientRect();
       const needed = Math.max(0, tableRect.top - headerHeight);
-      if (needed <= 0) return; // already fully collapsed — let native table scroll handle it
-      touch.triggered = true;
-      e.preventDefault();
-      scrollRef.current?.scrollBy({ top: needed, behavior: "smooth" });
+      if (needed <= 0) return; // already flush under the banner — let the table scroll normally
+      const consumed = el.scrollTop;
+      el.scrollTop = 0;
+      scrollEl.scrollTop += Math.min(consumed, needed);
     }
-    el.addEventListener("touchstart", onStart, { passive: true });
-    el.addEventListener("touchmove", onMove, { passive: false });
-    return () => {
-      el.removeEventListener("touchstart", onStart);
-      el.removeEventListener("touchmove", onMove);
-    };
+    el.addEventListener("scroll", onTableScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onTableScroll);
   }, [headerHeight]);
-
-  // Sizes the bottom filler just enough to guarantee the table can always
-  // be scrolled flush under the banner, however short the filtered list is.
-  // Deliberately NOT tied to scroll position — only to things that actually
-  // change the required amount (a new search, or the viewport resizing) —
-  // so there's no way for this to compound/drift the way a per-scroll
-  // recalculation could.
-  useEffect(() => {
-    function updateFillerHeight() {
-      const scrollEl = scrollRef.current;
-      const tableEl = tableRef.current;
-      const fillerEl = fillerRef.current;
-      if (!scrollEl || !tableEl || !fillerEl) return;
-      // Collapse the filler first so its own size can't skew the
-      // measurement, then force a synchronous reflow before reading layout.
-      fillerEl.style.minHeight = "0px";
-      void fillerEl.offsetHeight;
-      const tableTop = tableEl.getBoundingClientRect().top;
-      const requiredAdditionalScroll = Math.max(0, tableTop - headerHeight);
-      const availableWithoutFiller = scrollEl.scrollHeight - scrollEl.clientHeight - scrollEl.scrollTop;
-      const deficit = Math.max(0, requiredAdditionalScroll - availableWithoutFiller);
-      fillerEl.style.minHeight = `${Math.max(4, deficit)}px`;
-    }
-    updateFillerHeight();
-    window.addEventListener("resize", updateFillerHeight);
-    return () => window.removeEventListener("resize", updateFillerHeight);
-  }, [headerHeight, filtered.length]);
 
   function toggleSort(field) {
     if (sortField === field) {
