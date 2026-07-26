@@ -745,7 +745,6 @@ export default function LotLedger() {
   const horizTouch = useRef({ startX: 0, startScrollLeft: 0 });
   const leftStripRef = useRef(null);
   const rightStripRef = useRef(null);
-  const theadRowRef = useRef(null);
   const filtersRef = useRef(null);
   const fillerRef = useRef(null);
 
@@ -1088,43 +1087,16 @@ export default function LotLedger() {
   // effect adds one extra JS-computed nudge on top: it measures the row's
   // pure sticky position, then pushes it down just enough to clear the
   // banner, composing the two independent sticky contexts correctly.
-  useEffect(() => {
-    function updateStripBounds() {
-      const rowEl = theadRowRef.current;
-      if (!rowEl) return;
-      rowEl.style.transform = "translateY(0px)";
-      const stickyTop = rowEl.getBoundingClientRect().top;
-      const extra = Math.max(0, headerHeight - stickyTop);
-      rowEl.style.transform = `translateY(${extra}px)`;
-    }
-    updateStripBounds();
-    let ticking = false;
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => { updateStripBounds(); ticking = false; });
-    };
-    const scrollEl = scrollRef.current;
-    const tableEl = tableRef.current;
-    scrollEl?.addEventListener("scroll", onScroll);
-    tableEl?.addEventListener("scroll", onScroll);
-    window.addEventListener("resize", onScroll);
-    const ro = new ResizeObserver(onScroll);
-    if (tableRef.current) ro.observe(tableRef.current);
-    return () => {
-      scrollEl?.removeEventListener("scroll", onScroll);
-      tableEl?.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      ro.disconnect();
-    };
-  });
+  // (Removed: the JS transform that tried to keep the header flush under
+  // the banner even during full-page edge-strip scrolling was causing the
+  // header to intermittently disappear rather than just be imprecise.
+  // Plain CSS position:sticky below reliably keeps it pinned while
+  // scrolling within the table itself, which is the more important case.)
 
   // Sizes the bottom filler just enough to guarantee the table can always
   // be scrolled flush under the banner via the edge strips, regardless of
   // screen size — measured directly from real positions rather than a fixed
-  // guess, so it adapts automatically to unusual/large screens. This only
-  // recalculates once per search or resize — never on scroll or touch — so
-  // it doesn't carry the instability the earlier touch-based experiments had.
+  // guess, so it adapts automatically to unusual/large screens.
   useEffect(() => {
     function updateFillerHeight() {
       const scrollEl = scrollRef.current;
@@ -1137,11 +1109,24 @@ export default function LotLedger() {
       const requiredAdditionalScroll = Math.max(0, tableTop - headerHeight);
       const availableWithoutFiller = scrollEl.scrollHeight - scrollEl.clientHeight - scrollEl.scrollTop;
       const deficit = Math.max(0, requiredAdditionalScroll - availableWithoutFiller);
-      fillerEl.style.minHeight = `${Math.max(24, deficit + 8)}px`;
+      fillerEl.style.minHeight = `${Math.max(24, deficit + 32)}px`;
     }
     updateFillerHeight();
+    // Re-measure a couple more times shortly after mount/update — fonts and
+    // late content can still shift layout after the first measurement,
+    // which was leaving the filler consistently a bit too small.
+    const t1 = setTimeout(updateFillerHeight, 150);
+    const t2 = setTimeout(updateFillerHeight, 500);
     window.addEventListener("resize", updateFillerHeight);
-    return () => window.removeEventListener("resize", updateFillerHeight);
+    const ro = new ResizeObserver(updateFillerHeight);
+    if (filtersRef.current) ro.observe(filtersRef.current);
+    if (tableRef.current) ro.observe(tableRef.current);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.removeEventListener("resize", updateFillerHeight);
+      ro.disconnect();
+    };
   }, [headerHeight, filtered.length]);
 
   function toggleSort(field) {
@@ -1505,7 +1490,7 @@ export default function LotLedger() {
                   <col style={{ width: "48px" }} />  {/* Recall */}
                 </colgroup>
                 <thead>
-                  <tr ref={theadRowRef} style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 10, willChange: "transform" }}>
+                  <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 10 }}>
                     {[
                       ["stock", "Stock"], ["year", "Year"], ["make", "Make"], ["model", "Model"],
                       ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["drivetrain", "Engine/Drivetrain"], ["certified", "Cert"],
