@@ -1472,7 +1472,7 @@ export default function LotLedger() {
             </div>
 
             {/* Table */}
-            <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "auto", WebkitOverflowScrolling: "touch" }}>
+            <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflowX: "auto", overflowY: "clip", WebkitOverflowScrolling: "touch" }}>
               <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5 }}>
                 <colgroup>
                   <col style={{ width: "44px" }} />  {/* Stock */}
@@ -1490,7 +1490,7 @@ export default function LotLedger() {
                   <col style={{ width: "48px" }} />  {/* Recall */}
                 </colgroup>
                 <thead>
-                  <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 10 }}>
+                  <tr style={{ position: "sticky", top: headerHeight, background: "#1F2228", zIndex: 10 }}>
                     {[
                       ["stock", "Stock"], ["year", "Year"], ["make", "Make"], ["model", "Model"],
                       ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["drivetrain", "Engine/Drivetrain"], ["certified", "Cert"],
