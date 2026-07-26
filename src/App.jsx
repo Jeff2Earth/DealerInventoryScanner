@@ -1119,6 +1119,31 @@ export default function LotLedger() {
     };
   });
 
+  // Sizes the bottom filler just enough to guarantee the table can always
+  // be scrolled flush under the banner via the edge strips, regardless of
+  // screen size — measured directly from real positions rather than a fixed
+  // guess, so it adapts automatically to unusual/large screens. This only
+  // recalculates once per search or resize — never on scroll or touch — so
+  // it doesn't carry the instability the earlier touch-based experiments had.
+  useEffect(() => {
+    function updateFillerHeight() {
+      const scrollEl = scrollRef.current;
+      const tableEl = tableRef.current;
+      const fillerEl = fillerRef.current;
+      if (!scrollEl || !tableEl || !fillerEl) return;
+      fillerEl.style.minHeight = "0px";
+      void fillerEl.offsetHeight; // force reflow before measuring
+      const tableTop = tableEl.getBoundingClientRect().top;
+      const requiredAdditionalScroll = Math.max(0, tableTop - headerHeight);
+      const availableWithoutFiller = scrollEl.scrollHeight - scrollEl.clientHeight - scrollEl.scrollTop;
+      const deficit = Math.max(0, requiredAdditionalScroll - availableWithoutFiller);
+      fillerEl.style.minHeight = `${Math.max(24, deficit + 8)}px`;
+    }
+    updateFillerHeight();
+    window.addEventListener("resize", updateFillerHeight);
+    return () => window.removeEventListener("resize", updateFillerHeight);
+  }, [headerHeight, filtered.length]);
+
   function toggleSort(field) {
     if (sortField === field) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
