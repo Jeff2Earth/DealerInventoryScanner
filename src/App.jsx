@@ -747,7 +747,6 @@ export default function LotLedger() {
   const rightStripRef = useRef(null);
   const filtersRef = useRef(null);
   const fillerRef = useRef(null);
-  const headerScrollRef = useRef(null);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -1106,9 +1105,7 @@ export default function LotLedger() {
       if (!scrollEl || !tableEl || !fillerEl) return;
       fillerEl.style.minHeight = "0px";
       void fillerEl.offsetHeight; // force reflow before measuring
-      const tableTop = headerScrollRef.current
-        ? headerScrollRef.current.getBoundingClientRect().top
-        : tableEl.getBoundingClientRect().top;
+      const tableTop = tableEl.getBoundingClientRect().top;
       const requiredAdditionalScroll = Math.max(0, tableTop - headerHeight);
       const availableWithoutFiller = scrollEl.scrollHeight - scrollEl.clientHeight - scrollEl.scrollTop;
       const deficit = Math.max(0, requiredAdditionalScroll - availableWithoutFiller);
@@ -1131,19 +1128,6 @@ export default function LotLedger() {
       ro.disconnect();
     };
   }, [headerHeight, filtered.length]);
-
-  // Keeps the separate header bar's horizontal scroll position in sync with
-  // the table body, so columns stay aligned as you drag left/right.
-  useEffect(() => {
-    const bodyEl = tableRef.current;
-    const headEl = headerScrollRef.current;
-    if (!bodyEl || !headEl) return;
-    function onBodyScroll() {
-      headEl.scrollLeft = bodyEl.scrollLeft;
-    }
-    bodyEl.addEventListener("scroll", onBodyScroll, { passive: true });
-    return () => bodyEl.removeEventListener("scroll", onBodyScroll);
-  }, []);
 
   function toggleSort(field) {
     if (sortField === field) {
@@ -1494,14 +1478,7 @@ export default function LotLedger() {
                 element that also needs horizontal overflow — that pairing
                 was the root cause of the header sticking to the wrong
                 position instead of the actual screen. */}
-            <div
-              ref={headerScrollRef}
-              style={{
-                position: "sticky", top: headerHeight, zIndex: 10,
-                background: "#1F2228", overflow: "hidden",
-                borderTopLeftRadius: 10, borderTopRightRadius: 10,
-              }}
-            >
+            <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "auto", WebkitOverflowScrolling: "touch" }}>
               <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5, tableLayout: "fixed" }}>
                 <colgroup>
                   <col style={{ width: "44px" }} />  {/* Stock */}
@@ -1519,7 +1496,7 @@ export default function LotLedger() {
                   <col style={{ width: "48px" }} />  {/* Recall */}
                 </colgroup>
                 <thead>
-                  <tr>
+                  <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 10 }}>
                     {[
                       ["stock", "Stock"], ["year", "Year"], ["make", "Make"], ["model", "Model"],
                       ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["drivetrain", "Engine/Drivetrain"], ["certified", "Cert"],
@@ -1533,25 +1510,6 @@ export default function LotLedger() {
                     ))}
                   </tr>
                 </thead>
-              </table>
-            </div>
-            <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderBottomLeftRadius: 10, borderBottomRightRadius: 10, overflowX: "auto", overflowY: "clip", WebkitOverflowScrolling: "touch" }}>
-              <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5, tableLayout: "fixed" }}>
-                <colgroup>
-                  <col style={{ width: "44px" }} />  {/* Stock */}
-                  <col style={{ width: "34px" }} />  {/* Year */}
-                  <col style={{ width: "40px" }} />  {/* Make */}
-                  <col style={{ width: "100px" }} /> {/* Model */}
-                  <col style={{ width: "62px" }} />  {/* Price */}
-                  <col style={{ width: "50px" }} />  {/* Odo */}
-                  <col style={{ width: "62px" }} />  {/* Color */}
-                  <col style={{ width: "58px" }} />  {/* Engine/Drivetrain */}
-                  <col style={{ width: "28px" }} />  {/* Cert */}
-                  <col style={{ width: "90px" }} />  {/* VIN */}
-                  <col style={{ width: "42px" }} />  {/* Type */}
-                  <col style={{ width: "32px" }} />  {/* Days */}
-                  <col style={{ width: "48px" }} />  {/* Recall */}
-                </colgroup>
                 <tbody>
                   {filtered.map((r, i) => (
                     <tr key={r.vin + r.scanDate + i} className="lg-row" style={{ background: i % 2 ? "#22252B" : "#24272E" }}>
