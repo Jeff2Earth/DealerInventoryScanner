@@ -743,6 +743,7 @@ export default function LotLedger() {
   const hasRetriedVoice = useRef(false);
   const edgeTouch = useRef({ startY: 0, startScrollTop: 0 });
   const horizTouch = useRef({ startX: 0, startScrollLeft: 0 });
+  const swipeCollapseTouch = useRef({ startY: 0 });
   const leftStripRef = useRef(null);
   const rightStripRef = useRef(null);
   const filtersRef = useRef(null);
@@ -1407,7 +1408,7 @@ export default function LotLedger() {
 
               {!showFilters && (
                 <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -4, marginTop: -4, paddingRight: 32 }}>
-                  <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 14, cursor: "pointer", padding: 18, margin: -18, position: "relative", zIndex: 50 }}>
+                  <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 17, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", padding: 18, margin: -18, position: "relative", zIndex: 50 }}>
                     Show
                   </button>
                 </div>
@@ -1463,7 +1464,9 @@ export default function LotLedger() {
                     >
                       Clear search
                     </button>
-                    <button onClick={() => setShowFilters(false)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 14, cursor: "pointer", padding: 12, margin: -12, position: "relative", zIndex: 50 }}>
+                  </div>
+                  <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end", marginTop: 2, paddingRight: 32 }}>
+                    <button onClick={() => setShowFilters(false)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 17, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", padding: 18, margin: -18, position: "relative", zIndex: 50 }}>
                       Hide
                     </button>
                   </div>
@@ -1478,7 +1481,17 @@ export default function LotLedger() {
                 element that also needs horizontal overflow — that pairing
                 was the root cause of the header sticking to the wrong
                 position instead of the actual screen. */}
-            <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "auto", WebkitOverflowScrolling: "touch" }}>
+            <div
+              ref={tableRef}
+              className="lg-scroll"
+              onTouchStart={(e) => { swipeCollapseTouch.current.startY = e.touches[0].clientY; }}
+              onTouchMove={(e) => {
+                if (!showFilters) return;
+                const dy = e.touches[0].clientY - swipeCollapseTouch.current.startY;
+                if (dy < -12) setShowFilters(false); // swiped up — collapse the menu, don't fight the scroll itself
+              }}
+              style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "auto", WebkitOverflowScrolling: "touch" }}
+            >
               <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5, tableLayout: "fixed" }}>
                 <colgroup>
                   <col style={{ width: "44px" }} />  {/* Stock */}
