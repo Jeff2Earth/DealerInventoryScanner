@@ -101,7 +101,7 @@ const VOICE_COLOR_ALIASES = {
 
 const VOICE_BODY_ALIASES = {
   "pickup": "truck", "cross over": "suv", "crossover": "suv",
-  "four door": "sedan", "two door": "coupe", "drop top": "convertible",
+  "four door": "4d", "two door": "2d", "drop top": "convertible",
   "minivan": "van",
 };
 
@@ -398,6 +398,11 @@ const MODEL_WORD_SHORTENINGS = {
   "convenience": "Conv",
   "advanced": "Adv",
   "appearance": "Appr",
+  // "4D" is a generic door-count prefix used across every body style in the
+  // data (sedans, SUVs, trucks, vans alike) — not sedan-specific — so these
+  // map to the literal prefix rather than guessing a body type.
+  "four-door": "4D", "fourdoor": "4D", "4-door": "4D",
+  "two-door": "2D", "twodoor": "2D", "2-door": "2D",
 };
 function shortenModelWords(model) {
   const s = (model || "").toString();
