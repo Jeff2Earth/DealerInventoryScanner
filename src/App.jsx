@@ -1408,7 +1408,7 @@ export default function LotLedger() {
 
               {!showFilters && (
                 <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -4, marginTop: -4, paddingRight: 32 }}>
-                  <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 17, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", padding: 18, margin: -18, position: "relative", zIndex: 50 }}>
+                  <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#ECE7DC", fontSize: 17, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", padding: 18, margin: -18, position: "relative", zIndex: 50 }}>
                     Show
                   </button>
                 </div>
@@ -1464,9 +1464,7 @@ export default function LotLedger() {
                     >
                       Clear search
                     </button>
-                  </div>
-                  <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end", marginTop: 2, paddingRight: 32 }}>
-                    <button onClick={() => setShowFilters(false)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 17, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", padding: 18, margin: -18, position: "relative", zIndex: 50 }}>
+                    <button onClick={() => setShowFilters(false)} style={{ background: "none", border: "none", color: "#ECE7DC", fontSize: 17, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", padding: 8, margin: -8, position: "relative", zIndex: 50 }}>
                       Hide
                     </button>
                   </div>
