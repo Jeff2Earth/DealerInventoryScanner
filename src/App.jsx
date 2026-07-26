@@ -1629,6 +1629,7 @@ export default function LotLedger() {
           onTouchMove={(e) => {
             const dy = e.touches[0].clientY - edgeTouch.current.startY;
             scrollRef.current.scrollTop = edgeTouch.current.startScrollTop - dy;
+            if (!showFilters && dy > 12) setShowFilters(true); // side-scroll down reveals the menu
           }}
           style={{
             position: "fixed",
