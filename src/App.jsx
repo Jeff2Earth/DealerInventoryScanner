@@ -718,7 +718,7 @@ export default function LotLedger() {
   const [dragOver, setDragOver] = useState(false);
   const [sortField, setSortField] = useState("price");
   const [sortDir, setSortDir] = useState("desc");
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
   const [confirmingClear, setConfirmingClear] = useState(false);
   const [exportHref, setExportHref] = useState(null);
   const [exportName, setExportName] = useState("");
