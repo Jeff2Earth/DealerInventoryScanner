@@ -1502,7 +1502,7 @@ export default function LotLedger() {
                 borderTopLeftRadius: 10, borderTopRightRadius: 10,
               }}
             >
-              <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5 }}>
+              <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5, tableLayout: "fixed" }}>
                 <colgroup>
                   <col style={{ width: "44px" }} />  {/* Stock */}
                   <col style={{ width: "34px" }} />  {/* Year */}
@@ -1536,7 +1536,7 @@ export default function LotLedger() {
               </table>
             </div>
             <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderBottomLeftRadius: 10, borderBottomRightRadius: 10, overflowX: "auto", overflowY: "clip", WebkitOverflowScrolling: "touch" }}>
-              <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5 }}>
+              <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5, tableLayout: "fixed" }}>
                 <colgroup>
                   <col style={{ width: "44px" }} />  {/* Stock */}
                   <col style={{ width: "34px" }} />  {/* Year */}
