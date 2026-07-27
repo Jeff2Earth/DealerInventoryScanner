@@ -1402,12 +1402,12 @@ export default function LotLedger() {
                   </button>
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: showFilters ? "center" : "space-between", marginBottom: 8 }}>
-                <div style={{ fontSize: 13, color: "#9A9C9E", flex: showFilters ? "none" : "1", textAlign: showFilters ? "center" : "left" }}>
+              <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
+                <div style={{ fontSize: 13, color: "#9A9C9E" }}>
                   {filtered.length}/{totalCount} vehicles
                 </div>
                 {!showFilters && (
-                  <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#ECE7DC", fontSize: 17, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", padding: 8, margin: -8, position: "relative", zIndex: 50 }}>
+                  <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#ECE7DC", fontSize: 17, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", padding: 8, position: "absolute", right: 0, zIndex: 50 }}>
                     Show
                   </button>
                 )}
