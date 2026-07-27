@@ -1500,7 +1500,7 @@ export default function LotLedger() {
                     <tr key={r.vin + r.scanDate + i} className="lg-row" style={{ background: i % 2 ? "#22252B" : "#24272E" }}>
                       <td className="lg-mono" style={{ padding: "4px 5px" }}>
                         <a
-                          href={`https://www.miltonmartintoyota.com/used-vehicles/?q=${encodeURIComponent(r.stock)}`}
+                          href={`https://www.miltonmartintoyota.com/used-vehicles/?q=${encodeURIComponent(r.stock)}&_dFR%5Btype%5D%5B0%5D=Used&_dFR%5Btype%5D%5B1%5D=Certified%2520Used&_dFR%5Btype%5D%5B2%5D=New`}
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{ color: "inherit", textDecoration: "underline", textDecorationColor: "#6B6D70" }}
