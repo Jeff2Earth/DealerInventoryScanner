@@ -1451,7 +1451,7 @@ export default function LotLedger() {
                 const dy = e.touches[0].clientY - swipeCollapseTouch.current.startY;
                 if (dy < -12) setShowFilters(false); // swiped up — collapse the menu, don't fight the scroll itself
               }}
-              style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "auto", WebkitOverflowScrolling: "touch" }}
+              style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: showFilters ? "60vh" : "78vh", overscrollBehavior: "auto", WebkitOverflowScrolling: "touch" }}
             >
               <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5, tableLayout: "fixed" }}>
                 <colgroup>
