@@ -1498,7 +1498,16 @@ export default function LotLedger() {
                 <tbody>
                   {filtered.map((r, i) => (
                     <tr key={r.vin + r.scanDate + i} className="lg-row" style={{ background: i % 2 ? "#22252B" : "#24272E" }}>
-                      <td className="lg-mono" style={{ padding: "4px 5px" }}>{r.stock}</td>
+                      <td className="lg-mono" style={{ padding: "4px 5px" }}>
+                        <a
+                          href={`https://www.miltonmartintoyota.com/used-vehicles/?q=${encodeURIComponent(r.stock)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "inherit", textDecoration: "underline", textDecorationColor: "#6B6D70" }}
+                        >
+                          {r.stock}
+                        </a>
+                      </td>
                       <td style={{ padding: "4px 5px" }}>{r.year}</td>
                       <td style={{ padding: "4px 5px", whiteSpace: "nowrap" }}>{r.make}</td>
                       <td style={{ padding: "4px 5px" }}>
