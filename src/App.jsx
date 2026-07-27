@@ -1445,7 +1445,6 @@ export default function LotLedger() {
                   </div>
                 </div>
               )}
-            </div>
 
             {/* Table */}
             {/* Column header — a separate table from the body, kept in
@@ -1583,7 +1582,7 @@ export default function LotLedger() {
               }}
               style={{ minHeight: 24, touchAction: "none" }}
             />
-          </>
+          </div>
         )}
       </div>
       <style>{`
