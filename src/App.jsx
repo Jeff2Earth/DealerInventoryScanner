@@ -653,6 +653,18 @@ function MultiSelect({ label, options, selected, onChange }) {
   );
 }
 
+// Reads the persisted UI state (search/filters/sort/scroll position) saved
+// from a previous visit, so navigating away (e.g. tapping a stock number
+// link) and back doesn't lose your place if the browser does a full reload
+// instead of restoring from its own back-forward cache.
+function loadUIState() {
+  try {
+    return JSON.parse(localStorage.getItem("lot-ledger-ui-state") || "{}");
+  } catch {
+    return {};
+  }
+}
+
 export default function LotLedger() {
   const [unlocked, setUnlocked] = useState(() => {
     try {
@@ -716,9 +728,9 @@ export default function LotLedger() {
 
   const [queue, setQueue] = useState([]); // {name, status, error, count}
   const [dragOver, setDragOver] = useState(false);
-  const [sortField, setSortField] = useState("price");
-  const [sortDir, setSortDir] = useState("desc");
-  const [showFilters, setShowFilters] = useState(false);
+  const [sortField, setSortField] = useState(() => loadUIState().sortField || "price");
+  const [sortDir, setSortDir] = useState(() => loadUIState().sortDir || "desc");
+  const [showFilters, setShowFilters] = useState(() => loadUIState().showFilters ?? false);
   const [confirmingClear, setConfirmingClear] = useState(false);
   const [exportHref, setExportHref] = useState(null);
   const [exportName, setExportName] = useState("");
@@ -749,21 +761,24 @@ export default function LotLedger() {
   const filtersRef = useRef(null);
   const fillerRef = useRef(null);
 
-  const [filters, setFilters] = useState({
-    search: "",
-    make: [],
-    model: [],
-    type: [],
-    status: [],
-    recall: [],
-    scanDate: [],
-    yearMin: "",
-    yearMax: "",
-    priceMin: "",
-    priceMax: "",
-    odoMax: "",
-    certifiedOnly: false,
-    condition: "all", // "all" | "used" | "new"
+  const [filters, setFilters] = useState(() => {
+    const saved = loadUIState().filters || {};
+    return {
+      search: saved.search || "",
+      make: saved.make || [],
+      model: saved.model || [],
+      type: saved.type || [],
+      status: saved.status || [],
+      recall: saved.recall || [],
+      scanDate: saved.scanDate || [],
+      yearMin: saved.yearMin || "",
+      yearMax: saved.yearMax || "",
+      priceMin: saved.priceMin || "",
+      priceMax: saved.priceMax || "",
+      odoMax: saved.odoMax || "",
+      certifiedOnly: saved.certifiedOnly || false,
+      condition: saved.condition || "all", // "all" | "used" | "new"
+    };
   });
 
   async function processFile(file, scanDate) {
@@ -1064,6 +1079,59 @@ export default function LotLedger() {
 
   useEffect(() => {
     loadDriveScript();
+  }, []);
+
+  // Saves search/filters/sort/panel-visibility to localStorage whenever
+  // they change, so a full page reload (e.g. from browser back-navigation
+  // after tapping a stock number link, on browsers that don't restore from
+  // their own back-forward cache) can restore your exact place instead of
+  // resetting to defaults.
+  useEffect(() => {
+    try {
+      const prev = loadUIState();
+      localStorage.setItem("lot-ledger-ui-state", JSON.stringify({
+        ...prev, filters, sortField, sortDir, showFilters,
+      }));
+    } catch {
+      // Storage can fail (quota, private browsing); losing this is fine.
+    }
+  }, [filters, sortField, sortDir, showFilters]);
+
+  // Restores scroll position once, after the list has rendered — needs a
+  // brief delay since the page's scrollable height isn't final until the
+  // table has actually painted its rows.
+  useEffect(() => {
+    if (totalCount === 0) return;
+    const saved = loadUIState().scrollTop;
+    if (!saved) return;
+    const t = setTimeout(() => {
+      if (scrollRef.current) scrollRef.current.scrollTop = saved;
+    }, 50);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalCount > 0]);
+
+  // Saves scroll position continuously (lightly throttled) so it's available
+  // to restore if the page gets fully reloaded.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    let ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        try {
+          const prev = loadUIState();
+          localStorage.setItem("lot-ledger-ui-state", JSON.stringify({ ...prev, scrollTop: el.scrollTop }));
+        } catch {
+          // ignore
+        }
+        ticking = false;
+      });
+    }
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
   // Measures the sticky banner's actual rendered height so the table's
