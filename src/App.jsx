@@ -1402,17 +1402,16 @@ export default function LotLedger() {
                   </button>
                 </div>
               </div>
-              <div style={{ textAlign: "center", fontSize: 13, color: "#9A9C9E", marginBottom: 8 }}>
-                {filtered.length}/{totalCount} vehicles
-              </div>
-
-              {!showFilters && (
-                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -4, marginTop: -4, paddingRight: 32 }}>
-                  <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#ECE7DC", fontSize: 17, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", padding: 18, margin: -18, position: "relative", zIndex: 50 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: showFilters ? "center" : "space-between", marginBottom: 8 }}>
+                <div style={{ fontSize: 13, color: "#9A9C9E", flex: showFilters ? "none" : "1", textAlign: showFilters ? "center" : "left" }}>
+                  {filtered.length}/{totalCount} vehicles
+                </div>
+                {!showFilters && (
+                  <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#ECE7DC", fontSize: 17, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", padding: 8, margin: -8, position: "relative", zIndex: 50 }}>
                     Show
                   </button>
-                </div>
-              )}
+                )}
+              </div>
 
               {showFilters && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8, alignItems: "start", maxWidth: 640, margin: "0 auto" }}>
