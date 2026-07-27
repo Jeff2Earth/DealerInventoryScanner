@@ -1319,11 +1319,17 @@ export default function LotLedger() {
           <>
             {/* Filters */}
             <div ref={filtersRef} style={{ background: "#24272E", borderRadius: 10, padding: "10px 12px 8px" }}>
-              {/* General search */}
-              <div style={{ position: "relative", maxWidth: 640, margin: "0 auto 4px" }}>
-                <input
-                  ref={searchInputRef}
-                  className="lg-input"
+              {/* General search — sticky right below the banner, visible
+                  whether the filter grid is shown or hidden */}
+              <div style={{
+                position: "sticky", top: headerHeight, zIndex: 55,
+                background: "#24272E", padding: "10px 12px 4px", margin: "-10px -12px 0",
+                borderTopLeftRadius: 10, borderTopRightRadius: 10,
+              }}>
+                <div style={{ position: "relative", maxWidth: 640, margin: "0 auto 4px" }}>
+                  <input
+                    ref={searchInputRef}
+                    className="lg-input"
                   style={{ padding: "10px 92px 10px 46px", textAlign: "center" }}
                   placeholder="Search anything (stock, VIN, model, color, price…)"
                   value={filters.search}
@@ -1376,6 +1382,7 @@ export default function LotLedger() {
                   </button>
                 )}
               </div>
+              </div>
 
               {showFilters && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8, alignItems: "start", maxWidth: 640, margin: "0 auto" }}>
@@ -1427,7 +1434,9 @@ export default function LotLedger() {
                     >
                       Clear search
                     </button>
-                    <button onClick={() => setShowFilters(false)} style={{ background: "none", border: "none", color: "#ECE7DC", fontSize: 17, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", padding: 8, margin: -8, position: "relative", zIndex: 50 }}>
+                  </div>
+                  <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end", marginTop: 2 }}>
+                    <button onClick={() => setShowFilters(false)} style={{ background: "none", border: "none", color: "#ECE7DC", fontSize: 17, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", padding: 8, zIndex: 50 }}>
                       Hide
                     </button>
                   </div>
