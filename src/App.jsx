@@ -1094,42 +1094,6 @@ export default function LotLedger() {
   // Plain CSS position:sticky below reliably keeps it pinned while
   // scrolling within the table itself, which is the more important case.)
 
-  // Sizes the bottom filler just enough to guarantee the table can always
-  // be scrolled flush under the banner via the edge strips, regardless of
-  // screen size — measured directly from real positions rather than a fixed
-  // guess, so it adapts automatically to unusual/large screens.
-  useEffect(() => {
-    function updateFillerHeight() {
-      const scrollEl = scrollRef.current;
-      const tableEl = tableRef.current;
-      const fillerEl = fillerRef.current;
-      if (!scrollEl || !tableEl || !fillerEl) return;
-      fillerEl.style.minHeight = "0px";
-      void fillerEl.offsetHeight; // force reflow before measuring
-      const tableTop = tableEl.getBoundingClientRect().top;
-      const requiredAdditionalScroll = Math.max(0, tableTop - headerHeight);
-      const availableWithoutFiller = scrollEl.scrollHeight - scrollEl.clientHeight - scrollEl.scrollTop;
-      const deficit = Math.max(0, requiredAdditionalScroll - availableWithoutFiller);
-      fillerEl.style.minHeight = `${Math.max(24, deficit + 32)}px`;
-    }
-    updateFillerHeight();
-    // Re-measure a couple more times shortly after mount/update — fonts and
-    // late content can still shift layout after the first measurement,
-    // which was leaving the filler consistently a bit too small.
-    const t1 = setTimeout(updateFillerHeight, 150);
-    const t2 = setTimeout(updateFillerHeight, 500);
-    window.addEventListener("resize", updateFillerHeight);
-    const ro = new ResizeObserver(updateFillerHeight);
-    if (filtersRef.current) ro.observe(filtersRef.current);
-    if (tableRef.current) ro.observe(tableRef.current);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      window.removeEventListener("resize", updateFillerHeight);
-      ro.disconnect();
-    };
-  }, [headerHeight, filtered.length]);
-
   function toggleSort(field) {
     if (sortField === field) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
