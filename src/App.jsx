@@ -1466,9 +1466,9 @@ export default function LotLedger() {
             >
               <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5, tableLayout: "fixed" }}>
                 <colgroup>
-                  <col style={{ width: "44px" }} />  {/* Stock */}
                   <col style={{ width: "34px" }} />  {/* Year */}
                   <col style={{ width: "40px" }} />  {/* Make */}
+                  <col style={{ width: "44px" }} />  {/* Stock */}
                   <col style={{ width: "100px" }} /> {/* Model */}
                   <col style={{ width: "62px" }} />  {/* Price */}
                   <col style={{ width: "50px" }} />  {/* Odo */}
@@ -1483,7 +1483,7 @@ export default function LotLedger() {
                 <thead>
                   <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 10 }}>
                     {[
-                      ["stock", "Stock"], ["year", "Year"], ["make", "Make"], ["model", "Model"],
+                      ["year", "Year"], ["make", "Make"], ["stock", "Stock"], ["model", "Model"],
                       ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["drivetrain", "Engine/Drivetrain"], ["certified", "Cert"],
                       ["vin", "VIN"],
                       ["type", "Type"], ["days", "Days"], ["recall", "Recall"],
@@ -1498,6 +1498,8 @@ export default function LotLedger() {
                 <tbody>
                   {filtered.map((r, i) => (
                     <tr key={r.vin + r.scanDate + i} className="lg-row" style={{ background: i % 2 ? "#22252B" : "#24272E" }}>
+                      <td style={{ padding: "4px 5px" }}>{r.year}</td>
+                      <td style={{ padding: "4px 5px", whiteSpace: "nowrap" }}>{r.make}</td>
                       <td className="lg-mono" style={{ padding: "4px 5px" }}>
                         <a
                           href={`https://www.miltonmartintoyota.com/used-vehicles/?q=${encodeURIComponent(r.stock)}&_dFR%5Btype%5D%5B0%5D=Used&_dFR%5Btype%5D%5B1%5D=Certified%2520Used&_dFR%5Btype%5D%5B2%5D=New`}
@@ -1508,8 +1510,6 @@ export default function LotLedger() {
                           {r.stock}
                         </a>
                       </td>
-                      <td style={{ padding: "4px 5px" }}>{r.year}</td>
-                      <td style={{ padding: "4px 5px", whiteSpace: "nowrap" }}>{r.make}</td>
                       <td style={{ padding: "4px 5px" }}>
                         {modelLineBreakParts(r.model).map((part, pi) => (
                           <span key={pi}>{pi > 0 && <br />}{part}</span>
