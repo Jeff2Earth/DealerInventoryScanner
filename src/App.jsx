@@ -1316,20 +1316,23 @@ export default function LotLedger() {
         )}
 
         {totalCount > 0 && (
-          <>
-            {/* Filters */}
-            <div ref={filtersRef} style={{ background: "#24272E", borderRadius: 10, padding: "10px 12px 8px" }}>
-              {/* General search — sticky right below the banner, visible
-                  whether the filter grid is shown or hidden */}
-              <div style={{
-                position: "sticky", top: headerHeight, zIndex: 55,
-                background: "#24272E", padding: "10px 12px 4px", margin: "-10px -12px 0",
-                borderTopLeftRadius: 10, borderTopRightRadius: 10,
-              }}>
-                <div style={{ position: "relative", maxWidth: 640, margin: "0 auto 4px" }}>
-                  <input
-                    ref={searchInputRef}
-                    className="lg-input"
+          <div>
+            {/* General search — sticky right below the banner, visible
+                whether the filter grid is shown or hidden. This lives
+                outside the filters card itself so its containing block
+                spans the whole page (through the table and footer) —
+                otherwise it only has room to stay stuck for a short
+                span before running out of container, which is why it
+                broke specifically at the very bottom of a long scroll. */}
+            <div style={{
+              position: "sticky", top: headerHeight, zIndex: 55,
+              background: "#24272E", padding: "10px 12px 4px",
+              borderTopLeftRadius: 10, borderTopRightRadius: 10,
+            }}>
+              <div style={{ position: "relative", maxWidth: 640, margin: "0 auto 4px" }}>
+                <input
+                  ref={searchInputRef}
+                  className="lg-input"
                   style={{ padding: "10px 92px 10px 46px", textAlign: "center" }}
                   placeholder="Search anything (stock, VIN, model, color, price…)"
                   value={filters.search}
