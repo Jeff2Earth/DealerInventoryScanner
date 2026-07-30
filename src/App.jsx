@@ -48,14 +48,18 @@ function parseMoney(v) {
 const APP_PASSWORD = "MMTROCKS";
 
 const PRICE_MARKUP = 2000;
-function markUpPrice(price) {
-  return price === null ? null : price + PRICE_MARKUP;
+function markUpPrice(price, isNew) {
+  if (price === null) return null;
+  return isNew ? price : price + PRICE_MARKUP; // no markup on new vehicles
 }
 
 // New stock numbers are always exactly 5 numeric digits (e.g. "60528").
 // Used stock numbers start with P or T, and/or end in a letter (e.g. "A", "B").
+function isNewStockNumber(stock) {
+  return /^\d{5}$/.test((stock || "").toString().trim());
+}
 function isNewVehicle(r) {
-  return /^\d{5}$/.test((r.stock || "").toString().trim());
+  return isNewStockNumber(r.stock);
 }
 
 // Parses a search string into AND-of-OR groups: words joined by "or" belong
@@ -450,7 +454,7 @@ function normalizeLegacyRow(r) {
     odometer: parseNum(r.o),
     vin: (r.v ?? "").toString().trim().toUpperCase(),
     days: parseNum(r.d),
-    price: markUpPrice(parseMoney(r.p)),
+    price: markUpPrice(parseMoney(r.p), isNewStockNumber(r.s)),
     priceMarked: true,
     certified: !!r.ce,
     recall: "",
@@ -505,7 +509,7 @@ function normalizePricingRow(row) {
     odometer: parseNum(getField(row, "odometer")),
     vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
     days: null, // this export doesn't include a days-on-lot column
-    price: markUpPrice(parseMoney(getField(row, "price / % mkt"))),
+    price: markUpPrice(parseMoney(getField(row, "price / % mkt")), isNewStockNumber(getField(row, "stock #"))),
     priceMarked: true,
     certified: /^y/i.test(certifiedVal.trim()),
     recall: (getField(row, "recall status") || "").toString().trim(),
@@ -548,7 +552,7 @@ function normalizePricingViewRow(row) {
     odometer: parseNum(getField(row, "odometer")),
     vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
     days: daysSince(getField(row, "inventory date")),
-    price: markUpPrice(parseMoney(getField(row, "price"))),
+    price: markUpPrice(parseMoney(getField(row, "price")), isNewStockNumber(getField(row, "stock #"))),
     priceMarked: true,
     certified: /^y/i.test(certifiedVal.trim()),
     recall: (getField(row, "recall status icon small") || "").toString().trim(),
@@ -703,7 +707,7 @@ export default function LotLedger() {
         ...r,
         make: shortenMake(r.make),
         model: shortenModelWords(r.model),
-        price: r.priceMarked ? r.price : markUpPrice(r.price),
+        price: r.priceMarked ? r.price : markUpPrice(r.price, isNewVehicle(r)),
         priceMarked: true,
       }));
       try {
