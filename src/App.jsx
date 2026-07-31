@@ -256,7 +256,7 @@ function parseVoiceTranscript(transcript, voiceLang) {
 
   // Certified / condition
   if (/\bcertified\b/.test(t)) patch.certifiedOnly = true;
-  if (/\bused\b/.test(t)) patch.condition = "used";
+  if (/\bused\b|\bpre-?owned\b/.test(t)) patch.condition = "used";
   if (/\bnew\b/.test(t) && !/\bnews\b/.test(t)) patch.condition = "new";
 
   // Color / body-type slang -> canonical words your data already contains,
@@ -1020,7 +1020,7 @@ export default function LotLedger() {
         const haystack = [
           r.stock, r.year, r.make, r.model, r.type, r.desc, r.status, r.recall,
           exteriorColor, r.drivetrain, r.odometer, r.vin, r.days, r.price, r.certified ? "certified" : "",
-          isNewVehicle(r) ? "new" : "used",
+          isNewVehicle(r) ? "new" : "used pre-owned",
         ]
           .filter((v) => v !== null && v !== undefined)
           .join(" ")
