@@ -48,59 +48,18 @@ function parseMoney(v) {
 const APP_PASSWORD = "MMTROCKS";
 
 const PRICE_MARKUP = 2000;
-function markUpPrice(price) {
-  return price === null ? null : price + PRICE_MARKUP;
+function markUpPrice(price, isNew) {
+  if (price === null) return null;
+  return isNew ? price : price + PRICE_MARKUP; // no markup on new vehicles
 }
 
 // New stock numbers are always exactly 5 numeric digits (e.g. "60528").
 // Used stock numbers start with P or T, and/or end in a letter (e.g. "A", "B").
-function isNewVehicle(r) {
-  return /^\d{5}$/.test((r.stock || "").toString().trim());
+function isNewStockNumber(stock) {
+  return /^\d{5}$/.test((stock || "").toString().trim());
 }
-
-// Maps raw manufacturer paint names (as they show up in your imports) to the
-// basic color words a search would actually use — e.g. searching "white"
-// should find a car whose real color is "Ice Cap" or "Super White", even
-// though neither of those literally contains the word "white". Add more
-// entries here any time you run into a paint name search doesn't catch.
-const COLOR_ALIASES = {
-  "ice cap": ["white"],
-  "super white": ["white"],
-  "wind chill pearl": ["white", "pearl"],
-  "celestial silver metallic": ["silver"],
-  "classic silver metallic": ["silver"],
-  "sonic silver": ["silver"],
-  "meteor shower": ["silver", "gray", "gold", "bronze"],
-  "underground": ["gray"],
-  "storm cloud": ["gray"],
-  "magnetic gray metallic": ["gray"],
-  "heavy metal": ["gray"],
-  "urban rock": ["gray", "white"],
-  "celestite": ["gray", "blue"],
-  "midnight black metallic": ["black"],
-  "dark cosmos": ["gray", "black"],
-  "supersonic red": ["red"],
-  "ruby flare pearl": ["red"],
-  "finish line red": ["red"],
-  "ocean gem": ["blue"],
-  "blueprint": ["blue"],
-  "reservoir blue": ["blue"],
-  "blue crush metallic": ["blue"],
-  "heritage blue": ["blue"],
-  "cavalry blue": ["blue"],
-  "everest": ["green"],
-  "bronze oxide": ["green"],
-  "cypress": ["green"],
-  "mudbath": ["tan", "brown"],
-  "inferno": ["orange"],
-};
-function colorAliasWords(colorText) {
-  const s = (colorText || "").toString().toLowerCase();
-  const words = [];
-  for (const [raw, basics] of Object.entries(COLOR_ALIASES)) {
-    if (s.includes(raw)) words.push(...basics);
-  }
-  return words;
+function isNewVehicle(r) {
+  return isNewStockNumber(r.stock);
 }
 
 // Parses a search string into AND-of-OR groups: words joined by "or" belong
@@ -129,6 +88,191 @@ function parseSearchGroups(query) {
   }
   if (current.length > 0) groups.push(current);
   return groups;
+}
+
+// ---- Voice query normalization ----
+// Turns a spoken query ("Toyota or Honda under 25 low miles 26") into a
+// filters patch: price/year/mileage/condition/certified go straight into
+// their own filter fields; color and body-type slang get swapped to the
+// words your data actually uses; whatever's left over (make, model, other
+// words) falls through to the existing free-text search box untouched.
+
+const VOICE_COLOR_ALIASES = {
+  "charcoal": "black", "midnight": "black", "jet black": "black",
+  "pearl": "white", "snow": "white", "ivory": "white",
+  "grey": "gray",
+};
+
+const VOICE_BODY_ALIASES = {
+  "pickup": "truck", "cross over": "suv", "crossover": "suv",
+  "four door": "4d", "two door": "2d", "drop top": "convertible",
+  "minivan": "van",
+};
+
+// Speech-to-text (especially on iOS) sometimes spells out model names that
+// mix letters and numbers instead of hearing them as one word — "4Runner"
+// becomes "for e runner", "RAV4" becomes "rav for", "C-HR" becomes "c h r".
+// This fixes that in two passes: first collapse any run of single letters
+// separated by spaces back into one word, then map the common mishearings
+// (collapsed or not) to the spelling your inventory actually uses.
+const MODEL_PHONETIC_ALIASES = {
+  "four runner": "4runner", "fore runner": "4runner", "for runner": "4runner",
+  "4 runner": "4runner", "forerunner": "4runner", "fourrunner": "4runner", "forrunner": "4runner",
+  "rav four": "rav4", "rav for": "rav4", "rav 4": "rav4", "ravfour": "rav4",
+  "c h r": "c-hr", "see h r": "c-hr", "cehr": "c-hr", "chr": "c-hr",
+  "c r v": "cr-v", "see r v": "cr-v", "crv": "cr-v",
+  "h r v": "hr-v", "see h v": "hr-v", "hrv": "hr-v",
+};
+
+function fixPhoneticModelNames(t) {
+  // Pass 1: collapse spelled-out letter runs ("f o r e r u n n e r" -> "forerunner")
+  t = t.replace(/\b(?:[a-z]\s){2,}[a-z]\b/g, (match) => match.replace(/\s+/g, ""));
+  // Pass 2: map known mishearings to the correct model spelling
+  for (const [phonetic, canon] of Object.entries(MODEL_PHONETIC_ALIASES)) {
+    t = t.replace(new RegExp("\\b" + phonetic + "\\b", "g"), canon);
+  }
+  return t;
+}
+
+// Filler words people say naturally that would otherwise pollute the
+// free-text search ("show me a Toyota" -> just "toyota").
+const VOICE_STOPWORDS = ["please", "show me", "find me", "looking for", "i want", "i need", "do you have", "do we have"];
+
+function wordsToNumber(str) {
+  const cleaned = str.toLowerCase().replace(/[$,]/g, "").trim();
+  if (/^\d+(\.\d+)?k$/.test(cleaned)) return Math.round(parseFloat(cleaned) * 1000);
+  if (/^\d+$/.test(cleaned)) {
+    const n = parseInt(cleaned, 10);
+    // "under 20" (dollars) means $20,000, not $20 — but a mileage caller
+    // strips "miles"/"k" before this runs, so this heuristic only applies
+    // to bare price numbers.
+    return n > 0 && n < 1000 ? n * 1000 : n;
+  }
+  return null;
+}
+
+// Parses a spoken transcript into a { ...filters patch } object. Merge the
+// result into your existing filters state; fields not mentioned are simply
+// left out of the patch, so anything already set stays as-is.
+// Translates common Spanish car-search vocabulary into the English words
+// the rest of the parser already understands (price/mileage/color/condition
+// logic), so Spanish voice search reuses the same pipeline instead of
+// needing its own separate set of rules. Make/model names are left as-is
+// since they're generally said the same way in both languages.
+const SPANISH_TO_ENGLISH = {
+  // price
+  "precio": "price", "maximo": "max", "máximo": "max", "minimo": "min", "mínimo": "min",
+  "menos de": "under", "bajo": "under", "por debajo de": "under",
+  "mas de": "over", "más de": "over", "arriba de": "over", "sobre": "over",
+  // mileage
+  "millas": "miles", "millaje": "mileage", "kilometraje": "mileage",
+  "pocas millas": "low miles",
+  // condition
+  "nuevo": "new", "nueva": "new", "usado": "used", "usada": "used", "certificado": "certified", "certificada": "certified",
+  // colors
+  "negro": "black", "negra": "black", "blanco": "white", "blanca": "white",
+  "plata": "silver", "plateado": "silver", "gris": "gray",
+  "rojo": "red", "roja": "red", "azul": "blue", "verde": "green",
+  // body types
+  "camioneta": "truck", "camión": "truck", "camion": "truck",
+  "todoterreno": "suv", "sedán": "sedan", "sedan": "sedan",
+  "cupé": "coupe", "cupe": "coupe", "furgoneta": "van", "convertible": "convertible",
+  // year
+  "año": "year", "ano": "year",
+};
+
+function translateSpanishTerms(t) {
+  let out = t;
+  // "25 mil" -> "25k", attached directly (no space) so it's consumed
+  // cleanly by the price/mileage regexes the same way "30 grand" is.
+  out = out.replace(/(\d[\d,]*)\s*(?:mil|mill)\b/gi, "$1k");
+  // Multi-word phrases first, so e.g. "menos de" becomes "under" as a whole
+  // before any single-word pass could partially match inside it.
+  const phrases = Object.keys(SPANISH_TO_ENGLISH).filter((k) => k.includes(" ")).sort((a, b) => b.length - a.length);
+  for (const phrase of phrases) {
+    out = out.replace(new RegExp(`\\b${phrase}\\b`, "gi"), SPANISH_TO_ENGLISH[phrase]);
+  }
+  for (const [es, en] of Object.entries(SPANISH_TO_ENGLISH)) {
+    if (es.includes(" ")) continue;
+    out = out.replace(new RegExp(`\\b${es}\\b`, "gi"), en);
+  }
+  return out;
+}
+
+function parseVoiceTranscript(transcript, voiceLang) {
+  let t = " " + transcript.toLowerCase().trim() + " ";
+  if (voiceLang && voiceLang.startsWith("es")) t = translateSpanishTerms(t);
+  t = fixPhoneticModelNames(t);
+  // "30 grand" / "30,000 grand" -> "30k", so the price patterns below (which
+  // already handle the "k" suffix) consume the whole phrase instead of
+  // leaving the word "grand" behind as leftover search text.
+  t = t.replace(/(\d[\d,]*)\s*grand\b/gi, "$1k");
+  const patch = {};
+  let m;
+
+  // Price range / thresholds first, so those digits can't also get picked
+  // up by the year check below.
+  if ((m = t.match(/(?:price\s*max|max\s*price)\s*(\d[\d,]*k?)/))) {
+    patch.priceMax = String(wordsToNumber(m[1]) ?? "");
+    t = t.replace(m[0], " ");
+  } else if ((m = t.match(/(?:price\s*min|min\s*price)\s*(\d[\d,]*k?)/))) {
+    patch.priceMin = String(wordsToNumber(m[1]) ?? "");
+    t = t.replace(m[0], " ");
+  } else if ((m = t.match(/(\d[\d,]*k?)\s*(?:to|-)\s*(\d[\d,]*k?)/))) {
+    patch.priceMin = String(wordsToNumber(m[1]) ?? "");
+    patch.priceMax = String(wordsToNumber(m[2]) ?? "");
+    t = t.replace(m[0], " ");
+  } else if ((m = t.match(/under\s+(\d[\d,]*k?)(?!\s*(?:miles?|mi\b))/))) {
+    patch.priceMax = String(wordsToNumber(m[1]) ?? "");
+    t = t.replace(m[0], " ");
+  } else if ((m = t.match(/over\s+(\d[\d,]*k?)/))) {
+    patch.priceMin = String(wordsToNumber(m[1]) ?? "");
+    t = t.replace(m[0], " ");
+  }
+
+  // Mileage
+  if (/\blow miles\b|\blow mileage\b/.test(t)) {
+    patch.odoMax = "50000"; // tune this default threshold as needed
+    t = t.replace(/\blow miles\b|\blow mileage\b/, " ");
+  } else if ((m = t.match(/(?:max\s*miles|miles\s*max|max\s*mileage|mileage\s*max)\s*(\d[\d,]*k?)/))) {
+    patch.odoMax = String(wordsToNumber(m[1]) ?? "");
+    t = t.replace(m[0], " ");
+  } else if ((m = t.match(/under\s+(\d[\d,]*)\s*(?:miles?|mi)\b/))) {
+    patch.odoMax = String(wordsToNumber(m[1]) ?? "");
+    t = t.replace(m[0], " ");
+  }
+
+  // Year — two-digit shorthand ("26") or full ("2026"). Runs after price
+  // and mileage are stripped out above so it can't grab those digits.
+  if ((m = t.match(/\b(20\d{2}|\d{2})\b/))) {
+    let y = parseInt(m[1], 10);
+    if (y < 100) y = y < 50 ? 2000 + y : 1900 + y; // adjust cutoff as your inventory ages
+    if (y >= 1990 && y <= 2035) {
+      patch.yearMin = String(y);
+      patch.yearMax = String(y);
+      t = t.replace(m[0], " ");
+    }
+  }
+
+  // Certified / condition
+  if (/\bcertified\b/.test(t)) patch.certifiedOnly = true;
+  if (/\bused\b|\bpre-?owned\b/.test(t)) patch.condition = "used";
+  if (/\bnew\b/.test(t) && !/\bnews\b/.test(t)) patch.condition = "new";
+
+  // Color / body-type slang -> canonical words your data already contains,
+  // so they flow into the existing free-text AND/OR search correctly.
+  for (const [slang, canon] of Object.entries(VOICE_COLOR_ALIASES)) {
+    t = t.replace(new RegExp("\\b" + slang + "\\b", "g"), canon);
+  }
+  for (const [slang, canon] of Object.entries(VOICE_BODY_ALIASES)) {
+    t = t.replace(new RegExp("\\b" + slang + "\\b", "g"), canon);
+  }
+  for (const phrase of VOICE_STOPWORDS) {
+    t = t.replace(new RegExp("\\b" + phrase + "\\b", "g"), " ");
+  }
+
+  patch.search = t.replace(/\s+/g, " ").trim();
+  return patch;
 }
 
 function parseNum(v) {
@@ -217,24 +361,6 @@ function parseCSV(text) {
 
 // Classifies a vehicle's body type from its Model name. Rule-based rather
 // than guessed per-row, so it's consistent — checked in order, first match wins.
-// Single source of truth for the table's columns — used by both the real
-// header row and the floating clone, so they can never drift apart.
-const TABLE_COLUMNS = [
-  ["stock", "Stock", "44px"],
-  ["year", "Year", "34px"],
-  ["make", "Make", "40px"],
-  ["model", "Model", "100px"],
-  ["price", "Price", "62px"],
-  ["odometer", "Odo", "50px"],
-  ["color", "Color", "62px"],
-  ["drivetrain", "Engine/Drivetrain", "58px"],
-  ["certified", "Cert", "28px"],
-  ["vin", "VIN", "90px"],
-  ["type", "Type", "42px"],
-  ["days", "Days", "32px"],
-  ["recall", "Recall", "48px"],
-];
-
 const TYPE_RULES = [
   [/CIVIC HATCHBACK|PRIUS/i, "Hatchback"],
   [/CIVIC SEDAN|S-CLASS|SENTRA|ACCORD|^CAMRY|ELANTRA|LS 500|MALIBU|^COROLLA(?! CROS)/i, "Sedan"],
@@ -268,6 +394,32 @@ function shortenMake(make) {
 // insensitive) so trims like "Atlas Cross Sport SE Technology" wrap to
 // fewer lines in the (intentionally narrow) Model column. Add more pairs
 // as you run into other long words.
+// Maps Toyota's marketing paint names to the plain color word a salesperson
+// would actually search for — many of these (Ice Cap, Underground, Ruby
+// Flare Pearl, Blueprint...) don't contain their basic color as a substring
+// at all, so without this, searching "white" or "blue" would silently miss
+// them. Checked as a substring match against the vehicle's color field, so
+// abbreviated forms some exports use (e.g. "Wind Chill Prl") still match.
+const COLOR_BASIC_MAP = [
+  ["ice cap", "white"], ["super white", "white"], ["wind chill", "white"],
+  ["celestial silver", "silver"], ["classic silver", "silver"], ["sonic silver", "silver"], ["meteor shower", "silver gray"],
+  ["underground", "gray"], ["storm cloud", "gray"], ["magnetic gray", "gray"], ["heavy metal", "gray"], ["urban rock", "gray white"], ["celestite", "gray blue"],
+  ["midnight black", "black"], ["dark cosmos", "gray black"],
+  ["supersonic red", "red"], ["ruby flare", "red"], ["finish line red", "red"],
+  ["ocean gem", "blue"], ["blueprint", "blue"], ["bluprint", "blue"], ["reservoir blue", "blue"],
+  ["blue crush", "blue"], ["heritage blue", "blue"], ["cavalry blue", "blue"],
+  ["everest", "green"], ["cypress", "green"], ["bronze oxide", "brown green"], ["bronze", "brown green"],
+  ["mudbath", "tan brown"], ["inferno", "orange"],
+];
+function getBasicColor(colorText) {
+  const t = (colorText || "").toLowerCase();
+  const matches = [];
+  for (const [phrase, basic] of COLOR_BASIC_MAP) {
+    if (t.includes(phrase)) matches.push(basic);
+  }
+  return matches.length ? matches.join(" ") : null;
+}
+
 const MODEL_WORD_SHORTENINGS = {
   "technology": "Tech",
   "premium": "Prem",
@@ -276,10 +428,31 @@ const MODEL_WORD_SHORTENINGS = {
   "convenience": "Conv",
   "advanced": "Adv",
   "appearance": "Appr",
+  // "4D" is a generic door-count prefix used across every body style in the
+  // data (sedans, SUVs, trucks, vans alike) — not sedan-specific — so these
+  // map to the literal prefix rather than guessing a body type.
+  "four-door": "4D", "fourdoor": "4D", "4-door": "4D",
+  "two-door": "2D", "twodoor": "2D", "2-door": "2D",
 };
 function shortenModelWords(model) {
   const s = (model || "").toString();
-  return s.replace(/[A-Za-z]+/g, (word) => MODEL_WORD_SHORTENINGS[word.toLowerCase()] || word);
+  const withoutEngineSize = stripEngineSizeTokens(s);
+  return withoutEngineSize.replace(/[A-Za-z]+/g, (word) => MODEL_WORD_SHORTENINGS[word.toLowerCase()] || word);
+}
+
+// The "Vehicle" description text this app parses Model out of is a loosely
+// maintained trim label — it sometimes carries an engine-size suffix like
+// "V6" or "I4" that's leftover from an older trim name and doesn't match
+// reality (e.g. a redesigned truck still labeled "V6" even though its real
+// engine, per the actual Engine column, is now a turbo 4-cylinder). Rather
+// than show a model name that might misstate the engine, strip these
+// tokens out of Model entirely — the Engine/Drivetrain column is the
+// single source of truth for what's actually under the hood.
+function stripEngineSizeTokens(s) {
+  return s
+    .replace(/\b[VIL]-?\d\b/gi, "") // V6, V-6, I4, L6, etc.
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 // Words that should always start a new line in the Model cell — e.g.
@@ -307,7 +480,7 @@ function normalizeLegacyRow(r) {
     odometer: parseNum(r.o),
     vin: (r.v ?? "").toString().trim().toUpperCase(),
     days: parseNum(r.d),
-    price: markUpPrice(parseMoney(r.p)),
+    price: markUpPrice(parseMoney(r.p), isNewStockNumber(r.s)),
     priceMarked: true,
     certified: !!r.ce,
     recall: "",
@@ -362,7 +535,7 @@ function normalizePricingRow(row) {
     odometer: parseNum(getField(row, "odometer")),
     vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
     days: null, // this export doesn't include a days-on-lot column
-    price: markUpPrice(parseMoney(getField(row, "price / % mkt"))),
+    price: markUpPrice(parseMoney(getField(row, "price / % mkt")), isNewStockNumber(getField(row, "stock #"))),
     priceMarked: true,
     certified: /^y/i.test(certifiedVal.trim()),
     recall: (getField(row, "recall status") || "").toString().trim(),
@@ -405,12 +578,21 @@ function normalizePricingViewRow(row) {
     odometer: parseNum(getField(row, "odometer")),
     vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
     days: daysSince(getField(row, "inventory date")),
-    price: markUpPrice(parseMoney(getField(row, "price"))),
+    price: markUpPrice(parseMoney(getField(row, "price")), isNewStockNumber(getField(row, "stock #"))),
     priceMarked: true,
     certified: /^y/i.test(certifiedVal.trim()),
     recall: (getField(row, "recall status icon small") || "").toString().trim(),
     drivetrain: engine && drivetrainType ? `${engine}/${drivetrainType}` : (engine || drivetrainType),
   };
+}
+
+// Real stock numbers on this lot are short (e.g. "60593", "P7362",
+// "60438A"). Anything containing "*" or longer than 9 characters is treated
+// as a stale factory/order allocation placeholder rather than a vehicle
+// actually on the lot, and filtered out at import time.
+function isStaleAllocation(r) {
+  const stock = (r.stock || "").toString();
+  return stock.includes("*") || stock.length > 9;
 }
 
 // Reads a file (legacy report CSV, or a native .xlsx/.xls pricing export)
@@ -421,16 +603,16 @@ async function extractRows(file) {
   if (name.endsWith(".csv")) {
     const text = await readFileAsText(file);
     const raw = parseCSV(text).filter((r) => r.v);
-    return raw.map(normalizeLegacyRow);
+    return raw.map(normalizeLegacyRow).filter((r) => r.vin && !isStaleAllocation(r));
   }
   const buf = await readFileAsArrayBuffer(file);
   const wb = XLSX.read(buf, { type: "array", cellDates: true });
   const sheet = wb.Sheets[wb.SheetNames[0]];
   const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
   if (json.length && getField(json[0], "inventory date") !== undefined) {
-    return json.map(normalizePricingViewRow).filter((r) => r.vin);
+    return json.map(normalizePricingViewRow).filter((r) => r.vin && !isStaleAllocation(r));
   }
-  return json.map(normalizePricingRow).filter((r) => r.vin);
+  return json.map(normalizePricingRow).filter((r) => r.vin && !isStaleAllocation(r));
 }
 
 function csvEscape(v) {
@@ -501,6 +683,18 @@ function MultiSelect({ label, options, selected, onChange }) {
   );
 }
 
+// Reads the persisted UI state (search/filters/sort/scroll position) saved
+// from a previous visit, so navigating away (e.g. tapping a stock number
+// link) and back doesn't lose your place if the browser does a full reload
+// instead of restoring from its own back-forward cache.
+function loadUIState() {
+  try {
+    return JSON.parse(localStorage.getItem("lot-ledger-ui-state") || "{}");
+  } catch {
+    return {};
+  }
+}
+
 export default function LotLedger() {
   const [unlocked, setUnlocked] = useState(() => {
     try {
@@ -539,7 +733,7 @@ export default function LotLedger() {
         ...r,
         make: shortenMake(r.make),
         model: shortenModelWords(r.model),
-        price: r.priceMarked ? r.price : markUpPrice(r.price),
+        price: r.priceMarked ? r.price : markUpPrice(r.price, isNewVehicle(r)),
         priceMarked: true,
       }));
       try {
@@ -564,15 +758,17 @@ export default function LotLedger() {
 
   const [queue, setQueue] = useState([]); // {name, status, error, count}
   const [dragOver, setDragOver] = useState(false);
-  const [sortField, setSortField] = useState("price");
-  const [sortDir, setSortDir] = useState("desc");
-  const [showFilters, setShowFilters] = useState(true);
+  const [sortField, setSortField] = useState(() => loadUIState().sortField || "price");
+  const [sortDir, setSortDir] = useState(() => loadUIState().sortDir || "desc");
+  const [showFilters, setShowFilters] = useState(() => loadUIState().showFilters ?? false);
   const [confirmingClear, setConfirmingClear] = useState(false);
   const [exportHref, setExportHref] = useState(null);
   const [exportName, setExportName] = useState("");
   const fileInputRef = useRef(null);
   const scrollRef = useRef(null);
   const tableRef = useRef(null);
+  const headerRef = useRef(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
   const driveTokenClient = useRef(null);
   const driveAccessToken = useRef(null);
   const [driveScriptReady, setDriveScriptReady] = useState(false);
@@ -581,6 +777,7 @@ export default function LotLedger() {
   const [driveLoading, setDriveLoading] = useState(false);
   const [driveError, setDriveError] = useState("");
   const [listening, setListening] = useState(false);
+  const [voiceLang, setVoiceLang] = useState("en-US"); // "en-US" | "es-US"
   const recognitionRef = useRef(null);
   const searchInputRef = useRef(null);
   const userStoppedVoice = useRef(false);
@@ -588,26 +785,30 @@ export default function LotLedger() {
   const hasRetriedVoice = useRef(false);
   const edgeTouch = useRef({ startY: 0, startScrollTop: 0 });
   const horizTouch = useRef({ startX: 0, startScrollLeft: 0 });
+  const swipeCollapseTouch = useRef({ startY: 0 });
   const leftStripRef = useRef(null);
   const rightStripRef = useRef(null);
-  const [showFloatingHeader, setShowFloatingHeader] = useState(false);
-  const floatingHeadInnerRef = useRef(null);
+  const filtersRef = useRef(null);
+  const fillerRef = useRef(null);
 
-  const [filters, setFilters] = useState({
-    search: "",
-    make: [],
-    model: [],
-    type: [],
-    status: [],
-    recall: [],
-    scanDate: [],
-    yearMin: "",
-    yearMax: "",
-    priceMin: "",
-    priceMax: "",
-    odoMax: "",
-    certifiedOnly: false,
-    condition: "all", // "all" | "used" | "new"
+  const [filters, setFilters] = useState(() => {
+    const saved = loadUIState().filters || {};
+    return {
+      search: saved.search || "",
+      make: saved.make || [],
+      model: saved.model || [],
+      type: saved.type || [],
+      status: saved.status || [],
+      recall: saved.recall || [],
+      scanDate: saved.scanDate || [],
+      yearMin: saved.yearMin || "",
+      yearMax: saved.yearMax || "",
+      priceMin: saved.priceMin || "",
+      priceMax: saved.priceMax || "",
+      odoMax: saved.odoMax || "",
+      certifiedOnly: saved.certifiedOnly || false,
+      condition: saved.condition || "all", // "all" | "used" | "new"
+    };
   });
 
   async function processFile(file, scanDate) {
@@ -758,14 +959,15 @@ export default function LotLedger() {
   function startVoiceSession() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
+    recognition.lang = voiceLang;
     recognition.continuous = false;
     recognition.interimResults = false;
 
     recognition.onresult = (e) => {
       gotVoiceResult.current = true;
       const transcript = e.results[0][0].transcript;
-      setFilters((f) => ({ ...f, search: transcript.trim() }));
+      const patch = parseVoiceTranscript(transcript, voiceLang);
+      setFilters((f) => ({ ...f, ...patch }));
       searchInputRef.current?.blur?.();
     };
     recognition.onend = () => {
@@ -803,6 +1005,14 @@ export default function LotLedger() {
     // Blur whatever's currently focused (e.g. the search box itself) so
     // starting voice search can never bring up the on-screen keyboard.
     document.activeElement?.blur?.();
+    // Clear every field a voice query can set — not just the search text —
+    // before the mic activates, so a stale year/price/mileage/condition
+    // from a previous voice search can't silently carry into the next one.
+    setFilters((f) => ({
+      ...f,
+      search: "", yearMin: "", yearMax: "", priceMin: "", priceMax: "",
+      odoMax: "", certifiedOnly: false, condition: "all",
+    }));
     userStoppedVoice.current = false;
     gotVoiceResult.current = false;
     hasRetriedVoice.current = false;
@@ -835,13 +1045,34 @@ export default function LotLedger() {
         const exteriorColor = r.color ? r.color.split(" / ")[0] : r.color;
         const haystack = [
           r.stock, r.year, r.make, r.model, r.type, r.desc, r.status, r.recall,
-          exteriorColor, r.drivetrain, r.odometer, r.vin, r.days, r.price, r.certified ? "certified" : "",
-          ...colorAliasWords(exteriorColor),
+          exteriorColor, getBasicColor(exteriorColor), r.drivetrain, r.odometer, r.vin, r.days, r.price, r.certified ? "certified" : "",
+          isNewVehicle(r) ? "new" : "used pre-owned",
         ]
           .filter((v) => v !== null && v !== undefined)
           .join(" ")
-          .toLowerCase();
-        const matches = groups.every((group) => group.some((term) => haystack.includes(term)));
+          .toLowerCase()
+          .replace(/-/g, ""); // hyphens stripped so "F150" matches "F-150", "CRV" matches "CR-V", etc.
+        const haystackWords = haystack.split(/[^a-z0-9]+/i).filter(Boolean);
+        const matches = groups.every((group) => group.some((term) => {
+          const t = term.replace(/-/g, "");
+          const abbreviated = (MODEL_WORD_SHORTENINGS[term.toLowerCase()] || "").toLowerCase().replace(/-/g, "");
+          const isAlpha = /^[a-z]+$/i.test(t);
+          const matchOne = (candidate) => {
+            if (!candidate) return false;
+            if (isAlpha) {
+              // Letter-only terms must match the START of some word in the
+              // haystack — so short terms like "gr" match the standalone
+              // trim word "GR" but not letters buried mid-word in something
+              // like "Underground". Partial typing ("corv" -> "Corvette")
+              // still works since it's a genuine word-start match.
+              return haystackWords.some((w) => w.startsWith(candidate));
+            }
+            // Numbers/VINs/mixed terms keep plain substring matching, since
+            // partial matches anywhere (e.g. last 6 of a VIN) are wanted here.
+            return haystack.includes(candidate);
+          };
+          return matchOne(t) || matchOne(abbreviated);
+        }));
         if (!matches) return false;
       }
       if (filters.make.length && !filters.make.includes(r.make)) return false;
@@ -880,60 +1111,86 @@ export default function LotLedger() {
     loadDriveScript();
   }, []);
 
-  // Keeps the two edge scroll-strips from ever overlapping the filters
-  // panel (search box, dropdowns, Hide/Show, Certified checkbox) above the
-  // table — they only cover from the table's current on-screen position
-  // down to the bottom, recalculated as the page scrolls or resizes.
-  //
-  // Also drives the floating header clone: the table's real column-label
-  // row is sticky *within the table's own scrollbox*, so once the page is
-  // scrolled far enough that the table's own top edge goes above the
-  // viewport, that real header disappears even though table rows are still
-  // visible lower on screen. The floating clone takes over in exactly that
-  // situation, then hides again once the real header would be showing anyway.
+  // Saves search/filters/sort/panel-visibility to localStorage whenever
+  // they change, so a full page reload (e.g. from browser back-navigation
+  // after tapping a stock number link, on browsers that don't restore from
+  // their own back-forward cache) can restore your exact place instead of
+  // resetting to defaults.
   useEffect(() => {
-    function updateStripBounds() {
-      const el = tableRef.current;
-      const rect = el ? el.getBoundingClientRect() : null;
-      const top = rect ? Math.max(0, rect.top) : 0;
-      if (leftStripRef.current) leftStripRef.current.style.top = `${top}px`;
-      if (rightStripRef.current) rightStripRef.current.style.top = `${top}px`;
-      if (rect) setShowFloatingHeader(rect.top < 0 && rect.bottom > 40);
-      else setShowFloatingHeader(false);
+    try {
+      const prev = loadUIState();
+      localStorage.setItem("lot-ledger-ui-state", JSON.stringify({
+        ...prev, filters, sortField, sortDir, showFilters,
+      }));
+    } catch {
+      // Storage can fail (quota, private browsing); losing this is fine.
     }
-    updateStripBounds();
+  }, [filters, sortField, sortDir, showFilters]);
+
+  // Restores scroll position once, after the list has rendered — needs a
+  // brief delay since the page's scrollable height isn't final until the
+  // table has actually painted its rows.
+  useEffect(() => {
+    if (totalCount === 0) return;
+    const saved = loadUIState().scrollTop;
+    if (!saved) return;
+    const t = setTimeout(() => {
+      if (scrollRef.current) scrollRef.current.scrollTop = saved;
+    }, 50);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalCount > 0]);
+
+  // Saves scroll position continuously (lightly throttled) so it's available
+  // to restore if the page gets fully reloaded.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
     let ticking = false;
-    const onScroll = () => {
+    function onScroll() {
       if (ticking) return;
       ticking = true;
-      requestAnimationFrame(() => { updateStripBounds(); ticking = false; });
-    };
-    const scrollEl = scrollRef.current;
-    scrollEl?.addEventListener("scroll", onScroll);
-    window.addEventListener("resize", onScroll);
-    const ro = new ResizeObserver(onScroll);
-    if (tableRef.current) ro.observe(tableRef.current);
-    return () => {
-      scrollEl?.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      ro.disconnect();
-    };
-  });
+      requestAnimationFrame(() => {
+        try {
+          const prev = loadUIState();
+          localStorage.setItem("lot-ledger-ui-state", JSON.stringify({ ...prev, scrollTop: el.scrollTop }));
+        } catch {
+          // ignore
+        }
+        ticking = false;
+      });
+    }
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
 
-  // Mirrors the table's horizontal scroll position onto the floating header
-  // clone, so its columns stay lined up with the real ones underneath.
+  // Measures the sticky banner's actual rendered height so the table's
+  // column header row can stick just below it (rather than at top:0, which
+  // would put it underneath the banner instead of visible beneath it).
   useEffect(() => {
-    const el = tableRef.current;
+    const el = headerRef.current;
     if (!el) return;
-    const onHScroll = () => {
-      if (floatingHeadInnerRef.current) {
-        floatingHeadInnerRef.current.style.transform = `translateX(${-el.scrollLeft}px)`;
-      }
-    };
-    el.addEventListener("scroll", onHScroll);
-    onHScroll();
-    return () => el.removeEventListener("scroll", onHScroll);
-  });
+    const update = () => setHeaderHeight(el.getBoundingClientRect().height);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // The table's own header row uses CSS position:sticky (top:0, relative to
+  // the table's own scroll box) to stay pinned while scrolling *within* the
+  // table's row list — reliable here since the table scrolls both axes via
+  // "auto"/"auto", avoiding the visible/auto pairing quirk that broke this
+  // before. That native stickiness alone isn't enough once the table's own
+  // box has scrolled up under the separately-sticky banner, though — so this
+  // effect adds one extra JS-computed nudge on top: it measures the row's
+  // pure sticky position, then pushes it down just enough to clear the
+  // banner, composing the two independent sticky contexts correctly.
+  // (Removed: the JS transform that tried to keep the header flush under
+  // the banner even during full-page edge-strip scrolling was causing the
+  // header to intermittently disappear rather than just be imprecise.
+  // Plain CSS position:sticky below reliably keeps it pinned while
+  // scrolling within the table itself, which is the more important case.)
 
   function toggleSort(field) {
     if (sortField === field) {
@@ -997,7 +1254,7 @@ export default function LotLedger() {
         .lg-input {
           background: #3D4354; border: 1px solid #6B7280; color: #ECE7DC;
           border-radius: 6px; padding: 7px 10px; font-size: 15px; font-family: 'IBM Plex Sans', sans-serif;
-          outline: none; width: 100%; box-sizing: border-box;
+          outline: none; width: 100%; box-sizing: border-box; position: relative; z-index: 45;
         }
         .lg-input:focus { border-color: #FFC15E; background: #454C60; }
         .lg-input::placeholder { color: #B4B8BF; }
@@ -1112,7 +1369,7 @@ export default function LotLedger() {
       )}
 
       {/* Header */}
-      <div style={{ background: "#000000", padding: "20px 16px 0", textAlign: "center" }}>
+      <div ref={headerRef} style={{ background: "#000000", padding: "20px 16px 0", textAlign: "center", position: "sticky", top: 0, zIndex: 60 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
           <Gauge size={22} color="#E8C468" />
           <h1 className="lg-display" style={{ fontSize: 21, fontWeight: 700, margin: 0, letterSpacing: 2, color: "#E8C468", textTransform: "uppercase" }}>
@@ -1157,15 +1414,24 @@ export default function LotLedger() {
         )}
 
         {totalCount > 0 && (
-          <>
-            {/* Filters */}
-            <div style={{ background: "#24272E", borderRadius: 10, padding: "10px 12px 8px" }}>
-              {/* General search */}
+          <div>
+            {/* General search — sticky right below the banner, visible
+                whether the filter grid is shown or hidden. This lives
+                outside the filters card itself so its containing block
+                spans the whole page (through the table and footer) —
+                otherwise it only has room to stay stuck for a short
+                span before running out of container, which is why it
+                broke specifically at the very bottom of a long scroll. */}
+            <div style={{
+              position: "sticky", top: headerHeight, zIndex: 55,
+              background: "#24272E", padding: "10px 12px 4px",
+              borderTopLeftRadius: 10, borderTopRightRadius: 10,
+            }}>
               <div style={{ position: "relative", maxWidth: 640, margin: "0 auto 4px" }}>
                 <input
                   ref={searchInputRef}
                   className="lg-input"
-                  style={{ padding: "6px 34px 6px 10px", textAlign: "center" }}
+                  style={{ padding: "10px 92px 10px 46px", textAlign: "center" }}
                   placeholder="Search anything (stock, VIN, model, color, price…)"
                   value={filters.search}
                   onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
@@ -1174,25 +1440,50 @@ export default function LotLedger() {
                   onClick={toggleVoiceSearch}
                   title="Voice search"
                   style={{
-                    position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)",
-                    background: "none", border: "none", cursor: "pointer", padding: 8,
-                    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2,
+                    position: "absolute", left: 2, top: "50%", transform: "translateY(-50%)",
+                    background: "none", border: "none", cursor: "pointer",
+                    width: 44, height: 44, minWidth: 44, minHeight: 44,
+                    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 46,
                   }}
                 >
-                  <Mic size={16} color={listening ? "#F2A93B" : "#9A9C9E"} style={listening ? { animation: "micPulse 1s ease-in-out infinite" } : undefined} />
+                  <Mic size={24} color={listening ? "#F2A93B" : "#9A9C9E"} style={listening ? { animation: "micPulse 1s ease-in-out infinite" } : undefined} />
                 </button>
-              </div>
-              <div style={{ textAlign: "center", fontSize: 13, color: "#9A9C9E", marginBottom: 8 }}>
-                {filtered.length}/{totalCount} vehicles
-              </div>
-
-              {!showFilters && (
-                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -4, marginTop: -4, paddingRight: 32 }}>
-                  <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 14, cursor: "pointer", padding: 18, margin: -18, position: "relative", zIndex: 50 }}>
-                    Show
+                <div style={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", gap: 2, zIndex: 46 }}>
+                  <button
+                    onClick={() => setVoiceLang((l) => (l === "en-US" ? "es-US" : "en-US"))}
+                    title="Voice search language"
+                    style={{
+                      background: "none", border: "1px solid #3A3F49", color: "#9A9C9E",
+                      borderRadius: 5, padding: "3px 5px", fontSize: 10.5, fontWeight: 600,
+                      cursor: "pointer", lineHeight: 1, minHeight: 30,
+                    }}
+                  >
+                    {voiceLang === "en-US" ? "EN" : "ES"}
+                  </button>
+                  <button
+                    onClick={toggleVoiceSearch}
+                    title="Voice search"
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      width: 40, height: 44, minWidth: 40, minHeight: 44,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <Mic size={24} color={listening ? "#F2A93B" : "#9A9C9E"} style={listening ? { animation: "micPulse 1s ease-in-out infinite" } : undefined} />
                   </button>
                 </div>
-              )}
+              </div>
+              <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
+                <div style={{ fontSize: 13, color: "#9A9C9E" }}>
+                  {filtered.length}/{totalCount} vehicles
+                </div>
+                {!showFilters && (
+                  <button onClick={() => setShowFilters((s) => !s)} style={{ background: "none", border: "none", color: "#ECE7DC", fontSize: 17, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", padding: 8, position: "absolute", right: 0, zIndex: 50 }}>
+                    Show
+                  </button>
+                )}
+              </div>
+              </div>
 
               {showFilters && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8, alignItems: "start", maxWidth: 640, margin: "0 auto" }}>
@@ -1240,27 +1531,61 @@ export default function LotLedger() {
                         search: "", make: [], model: [], type: [], status: [], recall: [], scanDate: [],
                         yearMin: "", yearMax: "", priceMin: "", priceMax: "", odoMax: "", certifiedOnly: false, condition: "all",
                       })}
-                      style={{ background: "none", border: "1px solid #3A3F49", color: "#9A9C9E", borderRadius: 6, padding: "5px 10px", fontSize: 13.5, cursor: "pointer" }}
+                      style={{ background: "none", border: "1px solid #C1502E", color: "#C1502E", fontWeight: 400, borderRadius: 6, padding: "5px 10px", fontSize: 13.5, cursor: "pointer" }}
                     >
                       Clear search
                     </button>
-                    <button onClick={() => setShowFilters(false)} style={{ background: "none", border: "none", color: "#9A9C9E", fontSize: 14, cursor: "pointer", padding: 12, margin: -12, position: "relative", zIndex: 50 }}>
+                  </div>
+                  <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end", marginTop: 2 }}>
+                    <button onClick={() => setShowFilters(false)} style={{ background: "none", border: "none", color: "#ECE7DC", fontSize: 17, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, cursor: "pointer", padding: 8, zIndex: 50 }}>
                       Hide
                     </button>
                   </div>
                 </div>
               )}
-            </div>
 
             {/* Table */}
-            <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
-              <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5 }}>
+            {/* Column header — a separate table from the body, kept in
+                horizontal sync via JS (see the sync effect below). This
+                avoids the CSS ambiguity of position:sticky living inside an
+                element that also needs horizontal overflow — that pairing
+                was the root cause of the header sticking to the wrong
+                position instead of the actual screen. */}
+            <div
+              ref={tableRef}
+              className="lg-scroll"
+              onTouchStart={(e) => { swipeCollapseTouch.current.startY = e.touches[0].clientY; }}
+              onTouchMove={(e) => {
+                if (!showFilters) return;
+                const dy = e.touches[0].clientY - swipeCollapseTouch.current.startY;
+                if (dy < -12) setShowFilters(false); // swiped up — collapse the menu, don't fight the scroll itself
+              }}
+              style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: showFilters ? "60vh" : "78vh", overscrollBehavior: "auto", WebkitOverflowScrolling: "touch" }}
+            >
+              <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5, tableLayout: "fixed" }}>
                 <colgroup>
-                  {TABLE_COLUMNS.map(([field, , width]) => <col key={field} style={{ width }} />)}
+                  <col style={{ width: "34px" }} />  {/* Year */}
+                  <col style={{ width: "40px" }} />  {/* Make */}
+                  <col style={{ width: "44px" }} />  {/* Stock */}
+                  <col style={{ width: "100px" }} /> {/* Model */}
+                  <col style={{ width: "62px" }} />  {/* Price */}
+                  <col style={{ width: "50px" }} />  {/* Odo */}
+                  <col style={{ width: "62px" }} />  {/* Color */}
+                  <col style={{ width: "58px" }} />  {/* Engine/Drivetrain */}
+                  <col style={{ width: "28px" }} />  {/* Cert */}
+                  <col style={{ width: "90px" }} />  {/* VIN */}
+                  <col style={{ width: "42px" }} />  {/* Type */}
+                  <col style={{ width: "32px" }} />  {/* Days */}
+                  <col style={{ width: "48px" }} />  {/* Recall */}
                 </colgroup>
                 <thead>
-                  <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 1 }}>
-                    {TABLE_COLUMNS.map(([field, label]) => (
+                  <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 56 }}>
+                    {[
+                      ["year", "Year"], ["make", "Make"], ["stock", "Stock"], ["model", "Model"],
+                      ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["drivetrain", "Engine/Drivetrain"], ["certified", "Cert"],
+                      ["vin", "VIN"],
+                      ["type", "Type"], ["days", "Days"], ["recall", "Recall"],
+                    ].map(([field, label]) => (
                       <th key={field} className="lg-th" onClick={() => toggleSort(field)}
                         style={{ textAlign: "left", padding: "7px 5px", color: "#9A9C9E", fontWeight: 600, borderBottom: "1px solid #3A3F49" }}>
                         {label} <SortIcon field={field} />
@@ -1271,9 +1596,18 @@ export default function LotLedger() {
                 <tbody>
                   {filtered.map((r, i) => (
                     <tr key={r.vin + r.scanDate + i} className="lg-row" style={{ background: i % 2 ? "#22252B" : "#24272E" }}>
-                      <td className="lg-mono" style={{ padding: "4px 5px" }}>{r.stock}</td>
                       <td style={{ padding: "4px 5px" }}>{r.year}</td>
                       <td style={{ padding: "4px 5px", whiteSpace: "nowrap" }}>{r.make}</td>
+                      <td className="lg-mono" style={{ padding: "4px 5px" }}>
+                        <a
+                          href={`https://www.miltonmartintoyota.com/used-vehicles/?q=${encodeURIComponent(r.stock)}&_dFR%5Btype%5D%5B0%5D=Used&_dFR%5Btype%5D%5B1%5D=Certified%2520Used&_dFR%5Btype%5D%5B2%5D=New`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "inherit", textDecoration: "underline", textDecorationColor: "#6B6D70" }}
+                        >
+                          {r.stock}
+                        </a>
+                      </td>
                       <td style={{ padding: "4px 5px" }}>
                         {modelLineBreakParts(r.model).map((part, pi) => (
                           <span key={pi}>{pi > 0 && <br />}{part}</span>
@@ -1307,26 +1641,6 @@ export default function LotLedger() {
                 <div style={{ textAlign: "center", color: "#6B6D70", padding: "24px", fontSize: 15 }}>No vehicles match these filters.</div>
               )}
             </div>
-
-            {showFloatingHeader && (
-              <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 45, background: "#1F2228", borderBottom: "1px solid #3A3F49", overflow: "hidden" }}>
-                <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5 }}>
-                  <colgroup>
-                    {TABLE_COLUMNS.map(([field, , width]) => <col key={field} style={{ width }} />)}
-                  </colgroup>
-                  <tbody>
-                    <tr ref={floatingHeadInnerRef} style={{ willChange: "transform" }}>
-                      {TABLE_COLUMNS.map(([field, label]) => (
-                        <td key={field} className="lg-th" onClick={() => toggleSort(field)}
-                          style={{ textAlign: "left", padding: "7px 5px", color: "#9A9C9E", fontWeight: 600 }}>
-                          {label} <SortIcon field={field} />
-                        </td>
-                      ))}
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span style={{ fontSize: 14, color: "#9A9C9E" }}>
@@ -1363,6 +1677,7 @@ export default function LotLedger() {
             {/* Lets you keep scrolling the table horizontally even when a
                 narrow search result leaves lots of empty space below it. */}
             <div
+              ref={fillerRef}
               onTouchStart={(e) => {
                 horizTouch.current.startX = e.touches[0].clientX;
                 horizTouch.current.startScrollLeft = tableRef.current?.scrollLeft || 0;
@@ -1372,9 +1687,9 @@ export default function LotLedger() {
                 const dx = e.touches[0].clientX - horizTouch.current.startX;
                 tableRef.current.scrollLeft = horizTouch.current.startScrollLeft - dx;
               }}
-              style={{ minHeight: "40vh", touchAction: "none" }}
+              style={{ minHeight: 24, touchAction: "none" }}
             />
-          </>
+          </div>
         )}
       </div>
       <style>{`
@@ -1393,13 +1708,14 @@ export default function LotLedger() {
           onTouchMove={(e) => {
             const dy = e.touches[0].clientY - edgeTouch.current.startY;
             scrollRef.current.scrollTop = edgeTouch.current.startScrollTop - dy;
+            if (!showFilters && dy > 12) setShowFilters(true); // side-scroll down reveals the menu
           }}
           style={{
             position: "fixed",
             top: 0,
             bottom: 0,
             [side]: 0,
-            width: 48,
+            width: 40,
             zIndex: 40,
             background: "transparent",
             touchAction: "none",
@@ -1408,4 +1724,4 @@ export default function LotLedger() {
       ))}
     </div>
   );
-  }
+                                        }
