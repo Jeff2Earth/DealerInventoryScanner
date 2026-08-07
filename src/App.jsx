@@ -402,7 +402,7 @@ function shortenMake(make) {
 // abbreviated forms some exports use (e.g. "Wind Chill Prl") still match.
 const COLOR_BASIC_MAP = [
   ["ice cap", "white"], ["super white", "white"], ["wind chill", "white"],
-  ["celestial silver", "silver"], ["classic silver", "silver"], ["sonic silver", "silver"], ["meteor shower", "silver gray"],
+  ["celestial silver", "silver"], ["classic silver", "silver"], ["sonic silver", "silver"], ["meteor shower", "silver gray gold bronze"],
   ["underground", "gray"], ["storm cloud", "gray"], ["magnetic gray", "gray"], ["heavy metal", "gray"], ["urban rock", "gray white"], ["celestite", "gray blue"],
   ["midnight black", "black"], ["dark cosmos", "gray black"],
   ["supersonic red", "red"], ["ruby flare", "red"], ["finish line red", "red"],
