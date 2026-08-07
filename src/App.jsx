@@ -408,7 +408,7 @@ const COLOR_BASIC_MAP = [
   ["supersonic red", "red"], ["ruby flare", "red"], ["finish line red", "red"],
   ["ocean gem", "blue"], ["blueprint", "blue"], ["bluprint", "blue"], ["reservoir blue", "blue"],
   ["blue crush", "blue"], ["heritage blue", "blue"], ["cavalry blue", "blue"],
-  ["everest", "green"], ["cypress", "green"], ["bronze oxide", "brown green"],
+  ["everest", "green"], ["cypress", "green"], ["bronze oxide", "brown green"], ["bronze", "brown green"],
   ["mudbath", "tan brown"], ["inferno", "orange"],
 ];
 function getBasicColor(colorText) {
@@ -1724,4 +1724,4 @@ export default function LotLedger() {
       ))}
     </div>
   );
-    }
+}
