@@ -394,6 +394,32 @@ function shortenMake(make) {
 // insensitive) so trims like "Atlas Cross Sport SE Technology" wrap to
 // fewer lines in the (intentionally narrow) Model column. Add more pairs
 // as you run into other long words.
+// Maps Toyota's marketing paint names to the plain color word a salesperson
+// would actually search for — many of these (Ice Cap, Underground, Ruby
+// Flare Pearl, Blueprint...) don't contain their basic color as a substring
+// at all, so without this, searching "white" or "blue" would silently miss
+// them. Checked as a substring match against the vehicle's color field, so
+// abbreviated forms some exports use (e.g. "Wind Chill Prl") still match.
+const COLOR_BASIC_MAP = [
+  ["ice cap", "white"], ["super white", "white"], ["wind chill", "white"],
+  ["celestial silver", "silver"], ["classic silver", "silver"], ["sonic silver", "silver"], ["meteor shower", "silver gray"],
+  ["underground", "gray"], ["storm cloud", "gray"], ["magnetic gray", "gray"], ["heavy metal", "gray"], ["urban rock", "gray white"], ["celestite", "gray blue"],
+  ["midnight black", "black"], ["dark cosmos", "gray black"],
+  ["supersonic red", "red"], ["ruby flare", "red"], ["finish line red", "red"],
+  ["ocean gem", "blue"], ["blueprint", "blue"], ["bluprint", "blue"], ["reservoir blue", "blue"],
+  ["blue crush", "blue"], ["heritage blue", "blue"], ["cavalry blue", "blue"],
+  ["everest", "green"], ["cypress", "green"], ["bronze oxide", "brown green"],
+  ["mudbath", "tan brown"], ["inferno", "orange"],
+];
+function getBasicColor(colorText) {
+  const t = (colorText || "").toLowerCase();
+  const matches = [];
+  for (const [phrase, basic] of COLOR_BASIC_MAP) {
+    if (t.includes(phrase)) matches.push(basic);
+  }
+  return matches.length ? matches.join(" ") : null;
+}
+
 const MODEL_WORD_SHORTENINGS = {
   "technology": "Tech",
   "premium": "Prem",
@@ -1019,7 +1045,7 @@ export default function LotLedger() {
         const exteriorColor = r.color ? r.color.split(" / ")[0] : r.color;
         const haystack = [
           r.stock, r.year, r.make, r.model, r.type, r.desc, r.status, r.recall,
-          exteriorColor, r.drivetrain, r.odometer, r.vin, r.days, r.price, r.certified ? "certified" : "",
+          exteriorColor, getBasicColor(exteriorColor), r.drivetrain, r.odometer, r.vin, r.days, r.price, r.certified ? "certified" : "",
           isNewVehicle(r) ? "new" : "used pre-owned",
         ]
           .filter((v) => v !== null && v !== undefined)
