@@ -414,7 +414,7 @@ const COLOR_BASIC_MAP = [
   ["underground", "gray"], ["storm cloud", "gray"], ["magnetic gray", "gray"], ["heavy metal", "gray"], ["urban rock", "gray white"], ["celestite", "gray blue"],
   ["midnight black", "black"], ["dark cosmos", "gray black"],
   ["supersonic red", "red"], ["ruby flare", "red"], ["finish line red", "red"],
-  ["ocean gem", "blue"], ["blueprint", "blue"], ["bluprint", "blue"], ["reservoir blue", "blue"],
+  ["ocean gem", "blue"], ["ocean", "blue"], ["blueprint", "blue"], ["bluprint", "blue"], ["reservoir blue", "blue"],
   ["blue crush", "blue"], ["heritage blue", "blue"], ["cavalry blue", "blue"],
   ["everest", "green"], ["cypress", "green"], ["bronze oxide", "brown green"], ["bronze", "brown green"],
   ["mudbath", "tan brown"], ["inferno", "orange"],
@@ -1732,4 +1732,4 @@ export default function LotLedger() {
       ))}
     </div>
   );
-                                                }
+  }
