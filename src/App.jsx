@@ -1553,7 +1553,7 @@ export default function LotLedger() {
                   <col style={{ width: "48px" }} />  {/* Recall */}
                 </colgroup>
                 <thead>
-                  <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 10 }}>
+                  <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 56 }}>
                     {[
                       ["year", "Year"], ["make", "Make"], ["stock", "Stock"], ["model", "Model"],
                       ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["drivetrain", "Engine/Drivetrain"], ["certified", "Cert"],
@@ -1698,4 +1698,4 @@ export default function LotLedger() {
       ))}
     </div>
   );
-}
+    }
