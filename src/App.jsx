@@ -217,6 +217,24 @@ function parseCSV(text) {
 
 // Classifies a vehicle's body type from its Model name. Rule-based rather
 // than guessed per-row, so it's consistent — checked in order, first match wins.
+// Single source of truth for the table's columns — used by both the real
+// header row and the floating clone, so they can never drift apart.
+const TABLE_COLUMNS = [
+  ["stock", "Stock", "44px"],
+  ["year", "Year", "34px"],
+  ["make", "Make", "40px"],
+  ["model", "Model", "100px"],
+  ["price", "Price", "62px"],
+  ["odometer", "Odo", "50px"],
+  ["color", "Color", "62px"],
+  ["drivetrain", "Engine/Drivetrain", "58px"],
+  ["certified", "Cert", "28px"],
+  ["vin", "VIN", "90px"],
+  ["type", "Type", "42px"],
+  ["days", "Days", "32px"],
+  ["recall", "Recall", "48px"],
+];
+
 const TYPE_RULES = [
   [/CIVIC HATCHBACK|PRIUS/i, "Hatchback"],
   [/CIVIC SEDAN|S-CLASS|SENTRA|ACCORD|^CAMRY|ELANTRA|LS 500|MALIBU|^COROLLA(?! CROS)/i, "Sedan"],
@@ -572,6 +590,8 @@ export default function LotLedger() {
   const horizTouch = useRef({ startX: 0, startScrollLeft: 0 });
   const leftStripRef = useRef(null);
   const rightStripRef = useRef(null);
+  const [showFloatingHeader, setShowFloatingHeader] = useState(false);
+  const floatingHeadInnerRef = useRef(null);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -864,12 +884,22 @@ export default function LotLedger() {
   // panel (search box, dropdowns, Hide/Show, Certified checkbox) above the
   // table — they only cover from the table's current on-screen position
   // down to the bottom, recalculated as the page scrolls or resizes.
+  //
+  // Also drives the floating header clone: the table's real column-label
+  // row is sticky *within the table's own scrollbox*, so once the page is
+  // scrolled far enough that the table's own top edge goes above the
+  // viewport, that real header disappears even though table rows are still
+  // visible lower on screen. The floating clone takes over in exactly that
+  // situation, then hides again once the real header would be showing anyway.
   useEffect(() => {
     function updateStripBounds() {
       const el = tableRef.current;
-      const top = el ? Math.max(0, el.getBoundingClientRect().top) : 0;
+      const rect = el ? el.getBoundingClientRect() : null;
+      const top = rect ? Math.max(0, rect.top) : 0;
       if (leftStripRef.current) leftStripRef.current.style.top = `${top}px`;
       if (rightStripRef.current) rightStripRef.current.style.top = `${top}px`;
+      if (rect) setShowFloatingHeader(rect.top < 0 && rect.bottom > 40);
+      else setShowFloatingHeader(false);
     }
     updateStripBounds();
     let ticking = false;
@@ -888,6 +918,21 @@ export default function LotLedger() {
       window.removeEventListener("resize", onScroll);
       ro.disconnect();
     };
+  });
+
+  // Mirrors the table's horizontal scroll position onto the floating header
+  // clone, so its columns stay lined up with the real ones underneath.
+  useEffect(() => {
+    const el = tableRef.current;
+    if (!el) return;
+    const onHScroll = () => {
+      if (floatingHeadInnerRef.current) {
+        floatingHeadInnerRef.current.style.transform = `translateX(${-el.scrollLeft}px)`;
+      }
+    };
+    el.addEventListener("scroll", onHScroll);
+    onHScroll();
+    return () => el.removeEventListener("scroll", onHScroll);
   });
 
   function toggleSort(field) {
@@ -1211,28 +1256,11 @@ export default function LotLedger() {
             <div ref={tableRef} className="lg-scroll" style={{ background: "#24272E", borderRadius: 10, overflow: "auto", maxHeight: "60vh", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
               <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5 }}>
                 <colgroup>
-                  <col style={{ width: "44px" }} />  {/* Stock */}
-                  <col style={{ width: "34px" }} />  {/* Year */}
-                  <col style={{ width: "40px" }} />  {/* Make */}
-                  <col style={{ width: "100px" }} /> {/* Model */}
-                  <col style={{ width: "62px" }} />  {/* Price */}
-                  <col style={{ width: "50px" }} />  {/* Odo */}
-                  <col style={{ width: "62px" }} />  {/* Color */}
-                  <col style={{ width: "58px" }} />  {/* Engine/Drivetrain */}
-                  <col style={{ width: "28px" }} />  {/* Cert */}
-                  <col style={{ width: "90px" }} />  {/* VIN */}
-                  <col style={{ width: "42px" }} />  {/* Type */}
-                  <col style={{ width: "32px" }} />  {/* Days */}
-                  <col style={{ width: "48px" }} />  {/* Recall */}
+                  {TABLE_COLUMNS.map(([field, , width]) => <col key={field} style={{ width }} />)}
                 </colgroup>
                 <thead>
                   <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 1 }}>
-                    {[
-                      ["stock", "Stock"], ["year", "Year"], ["make", "Make"], ["model", "Model"],
-                      ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["drivetrain", "Engine/Drivetrain"], ["certified", "Cert"],
-                      ["vin", "VIN"],
-                      ["type", "Type"], ["days", "Days"], ["recall", "Recall"],
-                    ].map(([field, label]) => (
+                    {TABLE_COLUMNS.map(([field, label]) => (
                       <th key={field} className="lg-th" onClick={() => toggleSort(field)}
                         style={{ textAlign: "left", padding: "7px 5px", color: "#9A9C9E", fontWeight: 600, borderBottom: "1px solid #3A3F49" }}>
                         {label} <SortIcon field={field} />
@@ -1279,6 +1307,26 @@ export default function LotLedger() {
                 <div style={{ textAlign: "center", color: "#6B6D70", padding: "24px", fontSize: 15 }}>No vehicles match these filters.</div>
               )}
             </div>
+
+            {showFloatingHeader && (
+              <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 45, background: "#1F2228", borderBottom: "1px solid #3A3F49", overflow: "hidden" }}>
+                <table style={{ width: "max-content", borderCollapse: "collapse", fontSize: 14.5 }}>
+                  <colgroup>
+                    {TABLE_COLUMNS.map(([field, , width]) => <col key={field} style={{ width }} />)}
+                  </colgroup>
+                  <tbody>
+                    <tr ref={floatingHeadInnerRef} style={{ willChange: "transform" }}>
+                      {TABLE_COLUMNS.map(([field, label]) => (
+                        <td key={field} className="lg-th" onClick={() => toggleSort(field)}
+                          style={{ textAlign: "left", padding: "7px 5px", color: "#9A9C9E", fontWeight: 600 }}>
+                          {label} <SortIcon field={field} />
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span style={{ fontSize: 14, color: "#9A9C9E" }}>
@@ -1360,4 +1408,4 @@ export default function LotLedger() {
       ))}
     </div>
   );
-                     }
+  }
