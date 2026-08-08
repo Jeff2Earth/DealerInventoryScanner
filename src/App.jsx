@@ -222,6 +222,13 @@ function parseVoiceTranscript(transcript, voiceLang) {
   // leaving the word "grand" behind as leftover search text.
   t = t.replace(/(\d[\d,]*)\s*grand\b/gi, "$1k");
   t = t.replace(/(\d[\d,]*)\s*thousand\b/gi, "$1k");
+  // Common phrasings for "under"/"over" — normalized to the one word the
+  // price/mileage regexes already look for, so e.g. "less than 30000" gets
+  // its threshold recognized (and the words "less than" consumed) instead
+  // of surviving into the leftover free-text search as literal, unmatchable
+  // words like "less"/"than" that would zero out every result.
+  t = t.replace(/\b(?:less than|no more than|below|up to|maximum of|max of)\b/gi, "under");
+  t = t.replace(/\b(?:more than|greater than|above|at least|minimum of|min of)\b/gi, "over");
   const patch = {};
   let m;
 
@@ -1784,4 +1791,4 @@ export default function LotLedger() {
       ))}
     </div>
   );
-}
+                            }
