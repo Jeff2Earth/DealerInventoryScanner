@@ -221,6 +221,7 @@ function parseVoiceTranscript(transcript, voiceLang) {
   // already handle the "k" suffix) consume the whole phrase instead of
   // leaving the word "grand" behind as leftover search text.
   t = t.replace(/(\d[\d,]*)\s*grand\b/gi, "$1k");
+  t = t.replace(/(\d[\d,]*)\s*thousand\b/gi, "$1k");
   const patch = {};
   let m;
 
@@ -241,6 +242,20 @@ function parseVoiceTranscript(transcript, voiceLang) {
     t = t.replace(m[0], " ");
   } else if ((m = t.match(/over\s+(\d[\d,]*k?)/))) {
     patch.priceMin = String(wordsToNumber(m[1]) ?? "");
+    t = t.replace(m[0], " ");
+  } else if ((m = t.match(/\b(\d[\d,]*k)\b(?!\s*(?:miles?|mi\b))/))) {
+    // A bare "35k"-style number with no "under"/"over" context defaults to
+    // a price ceiling — this is the common shopping instinct ("gimme a 35k
+    // Tacoma"). Mileage never falls into this bucket: it always requires
+    // the word "miles"/"mi" to be spoken, so there's no ambiguity here.
+    patch.priceMax = String(wordsToNumber(m[1]) ?? "");
+    t = t.replace(m[0], " ");
+  } else if ((m = t.match(/\b(\d{5,6})\b(?!\s*(?:miles?|mi\b))/))) {
+    // Same default-to-price fallback for a bare 5–6 digit number (e.g. a
+    // spoken "thirty thousand" that already got normalized to "30000").
+    // Deliberately excludes 4-digit numbers so this can never collide with
+    // a spoken year like "2026".
+    patch.priceMax = String(wordsToNumber(m[1]) ?? "");
     t = t.replace(m[0], " ");
   }
 
@@ -1769,4 +1784,4 @@ export default function LotLedger() {
       ))}
     </div>
   );
-      }
+}
