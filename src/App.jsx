@@ -53,13 +53,27 @@ function markUpPrice(price, isNew) {
   return isNew ? price : price + PRICE_MARKUP; // no markup on new vehicles
 }
 
-// New stock numbers are always exactly 5 numeric digits (e.g. "60528").
-// Used stock numbers start with P or T, and/or end in a letter (e.g. "A", "B").
+// New stock numbers are usually exactly 5 numeric digits (e.g. "60528").
+// Used stock numbers usually start with P, and/or end in a letter (e.g. "A").
+// This is only a fallback guess — used when the import doesn't include an
+// actual New/Used column. Verified against a real export: it gets ~93% of
+// vehicles right, but is wrong for some dealer-specific prefixes (e.g. this
+// dealer's "T"-prefix stock numbers turned out to be New, not Used) — so
+// the real column (when present) always wins over this guess.
 function isNewStockNumber(stock) {
   return /^\d{5}$/.test((stock || "").toString().trim());
 }
+// Reads an actual New/Used column from the row if the export includes one
+// (confirmed present in the "Pricing View" format as of Aug 2026) —
+// returns "new", "used", or null if there's no such column to read.
+function realCondition(row) {
+  const v = (getField(row, "new/used") || "").toString().trim().toUpperCase();
+  if (v === "N" || v === "NEW") return "new";
+  if (v === "U" || v === "USED") return "used";
+  return null;
+}
 function isNewVehicle(r) {
-  return isNewStockNumber(r.stock);
+  return r.condition === "new";
 }
 
 // Parses a search string into AND-of-OR groups: words joined by "or" belong
@@ -476,6 +490,7 @@ function modelLineBreakParts(model) {
 
 function normalizeLegacyRow(r) {
   const model = shortenModelWords((r.md ?? "").toString().trim());
+  const condition = isNewStockNumber(r.s) ? "new" : "used";
   return {
     stock: r.s ?? "",
     year: r.y ?? "",
@@ -488,8 +503,9 @@ function normalizeLegacyRow(r) {
     odometer: parseNum(r.o),
     vin: (r.v ?? "").toString().trim().toUpperCase(),
     days: parseNum(r.d),
-    price: markUpPrice(parseMoney(r.p), isNewStockNumber(r.s)),
+    price: markUpPrice(parseMoney(r.p), condition === "new"),
     priceMarked: true,
+    condition,
     certified: !!r.ce,
     recall: "",
     drivetrain: "",
@@ -531,8 +547,10 @@ function normalizePricingRow(row) {
   const shortModel = shortenModelWords(model);
   const classVal = (getField(row, "class") || "").toString();
   const certifiedVal = (getField(row, "certified") || "").toString();
+  const stockVal = getField(row, "stock #") ?? "";
+  const condition = realCondition(row) || (isNewStockNumber(stockVal) ? "new" : "used");
   return {
-    stock: getField(row, "stock #") ?? "",
+    stock: stockVal,
     year,
     make: shortMake,
     model: shortModel,
@@ -543,8 +561,9 @@ function normalizePricingRow(row) {
     odometer: parseNum(getField(row, "odometer")),
     vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
     days: null, // this export doesn't include a days-on-lot column
-    price: markUpPrice(parseMoney(getField(row, "price / % mkt")), isNewStockNumber(getField(row, "stock #"))),
+    price: markUpPrice(parseMoney(getField(row, "price / % mkt")), condition === "new"),
     priceMarked: true,
+    condition,
     certified: /^y/i.test(certifiedVal.trim()),
     recall: (getField(row, "recall status") || "").toString().trim(),
     drivetrain: "",
@@ -574,8 +593,10 @@ function normalizePricingViewRow(row) {
   const interiorColor = (getField(row, "interior color") || "").toString().trim();
   const engine = (getField(row, "engine") || "").toString().trim();
   const drivetrainType = (getField(row, "drivetrain type") || "").toString().trim();
+  const stockVal = getField(row, "stock #") ?? "";
+  const condition = realCondition(row) || (isNewStockNumber(stockVal) ? "new" : "used");
   return {
-    stock: getField(row, "stock #") ?? "",
+    stock: stockVal,
     year,
     make: shortenMake(make),
     model: shortenModelWords(model),
@@ -586,8 +607,9 @@ function normalizePricingViewRow(row) {
     odometer: parseNum(getField(row, "odometer")),
     vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
     days: daysSince(getField(row, "inventory date")),
-    price: markUpPrice(parseMoney(getField(row, "price")), isNewStockNumber(getField(row, "stock #"))),
+    price: markUpPrice(parseMoney(getField(row, "price")), condition === "new"),
     priceMarked: true,
+    condition,
     certified: /^y/i.test(certifiedVal.trim()),
     recall: (getField(row, "recall status icon small") || "").toString().trim(),
     drivetrain: engine && drivetrainType ? `${engine}/${drivetrainType}` : (engine || drivetrainType),
@@ -606,21 +628,32 @@ function isStaleAllocation(r) {
 // Reads a file (legacy report CSV, or a native .xlsx/.xls pricing export)
 // and returns a flat array of normalized vehicle records — no scanDate yet,
 // that's attached by the caller.
+// "T" stock numbers are service-loaner vehicles that eventually move to the
+// used lot after an unspecified number of days. Per dealer instruction: if
+// it has a price listed, it's ready to be shown and counts as Used
+// (regardless of what the New/Used column says) — if it has no price yet,
+// it's still just a loaner and shouldn't show up in the app at all.
+function applyLoanerRule(r) {
+  if (!/^T/i.test((r.stock || "").toString().trim())) return r;
+  if (r.price === null || r.price === undefined) return null;
+  return { ...r, condition: "used" };
+}
+
 async function extractRows(file) {
   const name = file.name.toLowerCase();
   if (name.endsWith(".csv")) {
     const text = await readFileAsText(file);
     const raw = parseCSV(text).filter((r) => r.v);
-    return raw.map(normalizeLegacyRow).filter((r) => r.vin && !isStaleAllocation(r));
+    return raw.map(normalizeLegacyRow).filter((r) => r.vin && !isStaleAllocation(r)).map(applyLoanerRule).filter(Boolean);
   }
   const buf = await readFileAsArrayBuffer(file);
   const wb = XLSX.read(buf, { type: "array", cellDates: true });
   const sheet = wb.Sheets[wb.SheetNames[0]];
   const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
   if (json.length && getField(json[0], "inventory date") !== undefined) {
-    return json.map(normalizePricingViewRow).filter((r) => r.vin && !isStaleAllocation(r));
+    return json.map(normalizePricingViewRow).filter((r) => r.vin && !isStaleAllocation(r)).map(applyLoanerRule).filter(Boolean);
   }
-  return json.map(normalizePricingRow).filter((r) => r.vin && !isStaleAllocation(r));
+  return json.map(normalizePricingRow).filter((r) => r.vin && !isStaleAllocation(r)).map(applyLoanerRule).filter(Boolean);
 }
 
 function csvEscape(v) {
@@ -737,13 +770,17 @@ export default function LotLedger() {
       // Records saved before the make/model shortening rules existed are
       // stuck with the old (longer) text forever unless re-processed here —
       // this keeps previously-imported data in sync with the current rules.
-      const healed = parsed.map((r) => ({
-        ...r,
-        make: shortenMake(r.make),
-        model: shortenModelWords(r.model),
-        price: r.priceMarked ? r.price : markUpPrice(r.price, isNewVehicle(r)),
-        priceMarked: true,
-      }));
+      const healed = parsed.map((r) => {
+        const condition = r.condition || (isNewStockNumber(r.stock) ? "new" : "used");
+        return {
+          ...r,
+          make: shortenMake(r.make),
+          model: shortenModelWords(r.model),
+          price: r.priceMarked ? r.price : markUpPrice(r.price, condition === "new"),
+          priceMarked: true,
+          condition,
+        };
+      });
       try {
         localStorage.setItem("lot-ledger-records", JSON.stringify(healed));
       } catch (e) {
@@ -1732,4 +1769,4 @@ export default function LotLedger() {
       ))}
     </div>
   );
-}
+      }
