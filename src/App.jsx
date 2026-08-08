@@ -82,8 +82,14 @@ function isNewVehicle(r) {
 // "blue or red corvette" -> [["blue","red"], ["corvette"]] — meaning
 // (blue OR red) AND corvette. "white or gray toyota or honda" ->
 // [["white","gray"], ["toyota","honda"]] — (white OR gray) AND (toyota OR honda).
+// Generic words that don't describe anything specific about a vehicle —
+// stripped out entirely rather than searched for literally, so "car under
+// 20k" behaves like "under 20k" instead of matching nothing (there's no
+// field in the data that would ever contain the literal word "car").
+const SEARCH_FILLER_WORDS = new Set(["car", "cars", "vehicle", "vehicles", "auto", "autos"]);
+
 function parseSearchGroups(query) {
-  const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const tokens = query.toLowerCase().trim().split(/\s+/).filter((t) => t && !SEARCH_FILLER_WORDS.has(t));
   const groups = [];
   let current = [];
   let prevWasOr = false;
@@ -1791,4 +1797,4 @@ export default function LotLedger() {
       ))}
     </div>
   );
-                            }
+      }
