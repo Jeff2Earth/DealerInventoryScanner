@@ -403,14 +403,14 @@ function shortenMake(make) {
 const COLOR_BASIC_MAP = [
   ["ice cap", "white"], ["super white", "white"], ["wind chill", "white"],
   ["celestial silver", "silver"], ["classic silver", "silver"], ["sonic silver", "silver"],
-  ["meteor shower", "silver gray gold bronze"],
+  ["meteor shower", "silver gray gold bronze brown"],
   // Milton Martin's Pricing View export truncates the actual paint name
   // down to just "Meteor" (verified against a real export — the field
   // literally contains only that word, with the vehicle's interior color
   // displayed right underneath it in the table, which is easy to mistake
   // for part of the same color name). Matches the same basic colors as
   // the full "Meteor Shower" name above.
-  ["meteor", "silver gray gold bronze"],
+  ["meteor", "silver gray gold bronze brown"],
   ["underground", "gray"], ["storm cloud", "gray"], ["magnetic gray", "gray"], ["heavy metal", "gray"], ["urban rock", "gray white"], ["celestite", "gray blue"],
   ["midnight black", "black"], ["dark cosmos", "gray black"],
   ["supersonic red", "red"], ["ruby flare", "red"], ["finish line red", "red"],
@@ -1732,4 +1732,4 @@ export default function LotLedger() {
       ))}
     </div>
   );
-      }
+}
