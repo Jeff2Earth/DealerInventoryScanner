@@ -53,6 +53,22 @@ function markUpPrice(price, isNew) {
   return isNew ? price : price + PRICE_MARKUP; // no markup on new vehicles
 }
 
+// This is a Loan-to-Value (LTV) proxy, expressed the way banks actually
+// present it: (actual original selling price + 7% sales tax) ÷ JD Power
+// (trade-in) value. Uses rawPrice (the true price from the file) rather
+// than the marked-up display price, since the bank is financing the real
+// sale price, not our markup. 100% means the deal is financing exactly what
+// the car is worth; above that, the customer's financing more than the
+// car's value (negative equity built in) — the classic subprime-lender
+// situation. ~125% is roughly where most prime lenders' LTV ceiling sits,
+// so that's the default cutoff here — change SUBPRIME_RATIO_CUTOFF any time.
+const SUBPRIME_RATIO_CUTOFF = 1.25; // 125% — at or above this, flagged as SubP
+function subprimeRatio(r) {
+  if (r.jdPower === null || r.jdPower === undefined || r.jdPower === 0) return null;
+  if (r.rawPrice === null || r.rawPrice === undefined) return null;
+  return (r.rawPrice * 1.07) / r.jdPower;
+}
+
 // New stock numbers are usually exactly 5 numeric digits (e.g. "60528").
 // Used stock numbers usually start with P, and/or end in a letter (e.g. "A").
 // This is only a fallback guess — used when the import doesn't include an
@@ -532,6 +548,7 @@ function normalizeLegacyRow(r) {
     vin: (r.v ?? "").toString().trim().toUpperCase(),
     days: parseNum(r.d),
     price: markUpPrice(parseMoney(r.p), condition === "new"),
+    rawPrice: parseMoney(r.p),
     priceMarked: true,
     condition,
     certified: !!r.ce,
@@ -590,6 +607,7 @@ function normalizePricingRow(row) {
     vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
     days: null, // this export doesn't include a days-on-lot column
     price: markUpPrice(parseMoney(getField(row, "price / % mkt")), condition === "new"),
+    rawPrice: parseMoney(getField(row, "price / % mkt")),
     priceMarked: true,
     condition,
     certified: /^y/i.test(certifiedVal.trim()),
@@ -636,6 +654,7 @@ function normalizePricingViewRow(row) {
     vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
     days: daysSince(getField(row, "inventory date")),
     price: markUpPrice(parseMoney(getField(row, "price")), condition === "new"),
+    rawPrice: parseMoney(getField(row, "price")),
     priceMarked: true,
     condition,
     certified: /^y/i.test(certifiedVal.trim()),
@@ -801,11 +820,14 @@ export default function LotLedger() {
       // this keeps previously-imported data in sync with the current rules.
       const healed = parsed.map((r) => {
         const condition = r.condition || (isNewStockNumber(r.stock) ? "new" : "used");
+        const price = r.priceMarked ? r.price : markUpPrice(r.price, condition === "new");
+        const rawPrice = r.rawPrice ?? (price === null ? null : condition === "new" ? price : price - PRICE_MARKUP);
         return {
           ...r,
           make: shortenMake(r.make),
           model: shortenModelWords(r.model),
-          price: r.priceMarked ? r.price : markUpPrice(r.price, condition === "new"),
+          price,
+          rawPrice,
           priceMarked: true,
           condition,
         };
@@ -1166,8 +1188,8 @@ export default function LotLedger() {
       return true;
     });
     out.sort((a, b) => {
-      let av = a[sortField];
-      let bv = b[sortField];
+      let av = sortField === "subprime" ? subprimeRatio(a) : a[sortField];
+      let bv = sortField === "subprime" ? subprimeRatio(b) : b[sortField];
       if (av === null || av === undefined) av = typeof bv === "number" ? -Infinity : "";
       if (bv === null || bv === undefined) bv = typeof av === "number" ? -Infinity : "";
       if (typeof av === "string") av = av.toLowerCase();
@@ -1649,6 +1671,7 @@ export default function LotLedger() {
                   <col style={{ width: "28px" }} />  {/* Cert */}
                   <col style={{ width: "90px" }} />  {/* VIN */}
                   <col style={{ width: "58px" }} />  {/* JD Power */}
+                  <col style={{ width: "48px" }} />  {/* SubP */}
                   <col style={{ width: "42px" }} />  {/* Type */}
                   <col style={{ width: "32px" }} />  {/* Days */}
                   <col style={{ width: "48px" }} />  {/* Recall */}
@@ -1660,6 +1683,7 @@ export default function LotLedger() {
                       ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["drivetrain", "Engine/Drivetrain"], ["certified", "Cert"],
                       ["vin", "VIN"],
                       ["jdPower", "JD Power"],
+                      ["subprime", "SubP"],
                       ["type", "Type"], ["days", "Days"], ["recall", "Recall"],
                     ].map(([field, label]) => (
                       <th key={field} className="lg-th" onClick={() => toggleSort(field)}
@@ -1703,6 +1727,19 @@ export default function LotLedger() {
                       <td style={{ padding: "4px 5px" }}>{r.certified ? "Yes" : ""}</td>
                       <td className="lg-mono" style={{ padding: "4px 5px", fontSize: 12, wordBreak: "break-all" }}>{r.vin}</td>
                       <td className="lg-mono" style={{ padding: "4px 5px" }}>{r.jdPower !== null && r.jdPower !== undefined ? `$${r.jdPower.toLocaleString()}` : ""}</td>
+                      <td className="lg-mono" style={{ padding: "4px 5px" }}>
+                        {(() => {
+                          const ratio = subprimeRatio(r);
+                          if (ratio === null) return "";
+                          const pct = Math.round(ratio * 100);
+                          const isSub = ratio >= SUBPRIME_RATIO_CUTOFF;
+                          return (
+                            <span style={{ color: isSub ? "#C1502E" : "#3FA796", fontWeight: isSub ? 700 : 400 }}>
+                              {pct}%{isSub ? " SubP" : ""}
+                            </span>
+                          );
+                        })()}
+                      </td>
                       <td style={{ padding: "4px 5px", color: "#9A9C9E" }}>{r.type}</td>
                       <td className="lg-mono" style={{ padding: "4px 5px", color: "#9A9C9E" }}>{r.days ?? ""}</td>
                       <td style={{ padding: "4px 5px" }}>
