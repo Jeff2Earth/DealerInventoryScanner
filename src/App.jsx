@@ -1677,7 +1677,7 @@ export default function LotLedger() {
                   <col style={{ width: "50px" }} />  {/* Odo */}
                   <col style={{ width: "62px" }} />  {/* Color */}
                   <col style={{ width: "58px" }} />  {/* Engine/Drivetrain */}
-                  <col style={{ width: "48px" }} />  {/* SubP */}
+                  <col style={{ width: "48px" }} />  {/* LTV */}
                   <col style={{ width: "90px" }} />  {/* VIN */}
                   <col style={{ width: "28px" }} />  {/* Cert */}
                   <col style={{ width: "42px" }} />  {/* Type */}
@@ -1689,7 +1689,7 @@ export default function LotLedger() {
                     {[
                       ["year", "Year"], ["make", "Make"], ["stock", "Stock"], ["model", "Model"],
                       ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["drivetrain", "Engine/Drivetrain"],
-                      ["subprime", "SubP"],
+                      ["subprime", "LTV"],
                       ["vin", "VIN"],
                       ["certified", "Cert"],
                       ["type", "Type"], ["days", "Days"], ["recall", "Recall"],
