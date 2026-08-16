@@ -1190,6 +1190,15 @@ export default function LotLedger() {
     out.sort((a, b) => {
       let av = sortField === "subprime" ? subprimeRatio(a) : a[sortField];
       let bv = sortField === "subprime" ? subprimeRatio(b) : b[sortField];
+      if (sortField === "subprime") {
+        // Vehicles with no ratio (missing JD Power or price) always sink to
+        // the bottom, in either sort direction — so ascending genuinely
+        // reads as "best approval odds to worst," not "blanks then best."
+        if (av === null && bv === null) return 0;
+        if (av === null) return 1;
+        if (bv === null) return -1;
+        return sortDir === "asc" ? av - bv : bv - av;
+      }
       if (av === null || av === undefined) av = typeof bv === "number" ? -Infinity : "";
       if (bv === null || bv === undefined) bv = typeof av === "number" ? -Infinity : "";
       if (typeof av === "string") av = av.toLowerCase();
