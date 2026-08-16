@@ -1677,10 +1677,9 @@ export default function LotLedger() {
                   <col style={{ width: "50px" }} />  {/* Odo */}
                   <col style={{ width: "62px" }} />  {/* Color */}
                   <col style={{ width: "58px" }} />  {/* Engine/Drivetrain */}
-                  <col style={{ width: "28px" }} />  {/* Cert */}
-                  <col style={{ width: "90px" }} />  {/* VIN */}
-                  <col style={{ width: "58px" }} />  {/* JD Power */}
                   <col style={{ width: "48px" }} />  {/* SubP */}
+                  <col style={{ width: "90px" }} />  {/* VIN */}
+                  <col style={{ width: "28px" }} />  {/* Cert */}
                   <col style={{ width: "42px" }} />  {/* Type */}
                   <col style={{ width: "32px" }} />  {/* Days */}
                   <col style={{ width: "48px" }} />  {/* Recall */}
@@ -1689,10 +1688,10 @@ export default function LotLedger() {
                   <tr style={{ position: "sticky", top: 0, background: "#1F2228", zIndex: 56 }}>
                     {[
                       ["year", "Year"], ["make", "Make"], ["stock", "Stock"], ["model", "Model"],
-                      ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["drivetrain", "Engine/Drivetrain"], ["certified", "Cert"],
-                      ["vin", "VIN"],
-                      ["jdPower", "JD Power"],
+                      ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["drivetrain", "Engine/Drivetrain"],
                       ["subprime", "SubP"],
+                      ["vin", "VIN"],
+                      ["certified", "Cert"],
                       ["type", "Type"], ["days", "Days"], ["recall", "Recall"],
                     ].map(([field, label]) => (
                       <th key={field} className="lg-th" onClick={() => toggleSort(field)}
@@ -1733,9 +1732,6 @@ export default function LotLedger() {
                         )}
                       </td>
                       <td style={{ padding: "4px 5px", color: "#9A9C9E" }}>{r.drivetrain}</td>
-                      <td style={{ padding: "4px 5px" }}>{r.certified ? "Yes" : ""}</td>
-                      <td className="lg-mono" style={{ padding: "4px 5px", fontSize: 12, wordBreak: "break-all" }}>{r.vin}</td>
-                      <td className="lg-mono" style={{ padding: "4px 5px" }}>{r.jdPower !== null && r.jdPower !== undefined ? `$${r.jdPower.toLocaleString()}` : ""}</td>
                       <td className="lg-mono" style={{ padding: "4px 5px" }}>
                         {(() => {
                           const ratio = subprimeRatio(r);
@@ -1749,6 +1745,8 @@ export default function LotLedger() {
                           );
                         })()}
                       </td>
+                      <td className="lg-mono" style={{ padding: "4px 5px", fontSize: 12, wordBreak: "break-all" }}>{r.vin}</td>
+                      <td style={{ padding: "4px 5px" }}>{r.certified ? "Yes" : ""}</td>
                       <td style={{ padding: "4px 5px", color: "#9A9C9E" }}>{r.type}</td>
                       <td className="lg-mono" style={{ padding: "4px 5px", color: "#9A9C9E" }}>{r.days ?? ""}</td>
                       <td style={{ padding: "4px 5px" }}>
