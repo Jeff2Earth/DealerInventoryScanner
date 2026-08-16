@@ -641,6 +641,7 @@ function normalizePricingViewRow(row) {
     certified: /^y/i.test(certifiedVal.trim()),
     recall: (getField(row, "recall status icon small") || "").toString().trim(),
     drivetrain: engine && drivetrainType ? `${engine}/${drivetrainType}` : (engine || drivetrainType),
+    jdPower: parseMoney(getField(row, "j.d. power trade in")),
   };
 }
 
@@ -1118,7 +1119,7 @@ export default function LotLedger() {
         const exteriorColor = r.color ? r.color.split(" / ")[0] : r.color;
         const haystack = [
           r.stock, r.year, r.make, r.model, r.type, r.desc, r.status, r.recall,
-          exteriorColor, getBasicColor(exteriorColor), r.drivetrain, r.odometer, r.vin, r.days, r.price, r.certified ? "certified" : "",
+          exteriorColor, getBasicColor(exteriorColor), r.drivetrain, r.odometer, r.vin, r.days, r.price, r.jdPower, r.certified ? "certified" : "",
           isNewVehicle(r) ? "new" : "used pre-owned",
         ]
           .filter((v) => v !== null && v !== undefined)
@@ -1647,6 +1648,7 @@ export default function LotLedger() {
                   <col style={{ width: "58px" }} />  {/* Engine/Drivetrain */}
                   <col style={{ width: "28px" }} />  {/* Cert */}
                   <col style={{ width: "90px" }} />  {/* VIN */}
+                  <col style={{ width: "58px" }} />  {/* JD Power */}
                   <col style={{ width: "42px" }} />  {/* Type */}
                   <col style={{ width: "32px" }} />  {/* Days */}
                   <col style={{ width: "48px" }} />  {/* Recall */}
@@ -1657,6 +1659,7 @@ export default function LotLedger() {
                       ["year", "Year"], ["make", "Make"], ["stock", "Stock"], ["model", "Model"],
                       ["price", "Price"], ["odometer", "Odo"], ["color", "Color"], ["drivetrain", "Engine/Drivetrain"], ["certified", "Cert"],
                       ["vin", "VIN"],
+                      ["jdPower", "JD Power"],
                       ["type", "Type"], ["days", "Days"], ["recall", "Recall"],
                     ].map(([field, label]) => (
                       <th key={field} className="lg-th" onClick={() => toggleSort(field)}
@@ -1699,6 +1702,7 @@ export default function LotLedger() {
                       <td style={{ padding: "4px 5px", color: "#9A9C9E" }}>{r.drivetrain}</td>
                       <td style={{ padding: "4px 5px" }}>{r.certified ? "Yes" : ""}</td>
                       <td className="lg-mono" style={{ padding: "4px 5px", fontSize: 12, wordBreak: "break-all" }}>{r.vin}</td>
+                      <td className="lg-mono" style={{ padding: "4px 5px" }}>{r.jdPower !== null && r.jdPower !== undefined ? `$${r.jdPower.toLocaleString()}` : ""}</td>
                       <td style={{ padding: "4px 5px", color: "#9A9C9E" }}>{r.type}</td>
                       <td className="lg-mono" style={{ padding: "4px 5px", color: "#9A9C9E" }}>{r.days ?? ""}</td>
                       <td style={{ padding: "4px 5px" }}>
