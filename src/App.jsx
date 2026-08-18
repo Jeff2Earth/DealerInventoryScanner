@@ -681,8 +681,15 @@ function isStaleAllocation(r) {
 // it has a price listed, it's ready to be shown and counts as Used
 // (regardless of what the New/Used column says) — if it has no price yet,
 // it's still just a loaner and shouldn't show up in the app at all.
+//
+// Exception: a "T" stock number ending in a letter (e.g. "T2101A") is a
+// trade-in taken on a purchased T-number vehicle — already a normal used
+// car ready for sale, not a loaner. These are always included, with or
+// without a price, and aren't forced to "used" (they already are).
 function applyLoanerRule(r) {
-  if (!/^T/i.test((r.stock || "").toString().trim())) return r;
+  const stock = (r.stock || "").toString().trim();
+  if (!/^T/i.test(stock)) return r;
+  if (/[A-Za-z]$/.test(stock)) return r; // trade-in off a T-number — not a loaner
   if (r.price === null || r.price === undefined) return null;
   return { ...r, condition: "used" };
 }
