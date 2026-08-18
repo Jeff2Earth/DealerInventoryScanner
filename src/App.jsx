@@ -594,6 +594,7 @@ function normalizePricingRow(row) {
   const certifiedVal = (getField(row, "certified") || "").toString();
   const stockVal = getField(row, "stock #") ?? "";
   const condition = realCondition(row) || (isNewStockNumber(stockVal) ? "new" : "used");
+  const resolvedPrice = parseMoney(getField(row, "price / % mkt")) ?? parseMoney(getField(row, "pending price"));
   return {
     stock: stockVal,
     year,
@@ -606,8 +607,8 @@ function normalizePricingRow(row) {
     odometer: parseNum(getField(row, "odometer")),
     vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
     days: null, // this export doesn't include a days-on-lot column
-    price: markUpPrice(parseMoney(getField(row, "price / % mkt")), condition === "new"),
-    rawPrice: parseMoney(getField(row, "price / % mkt")),
+    price: markUpPrice(resolvedPrice, condition === "new"),
+    rawPrice: resolvedPrice,
     priceMarked: true,
     condition,
     certified: /^y/i.test(certifiedVal.trim()),
@@ -641,6 +642,10 @@ function normalizePricingViewRow(row) {
   const drivetrainType = (getField(row, "drivetrain type") || "").toString().trim();
   const stockVal = getField(row, "stock #") ?? "";
   const condition = realCondition(row) || (isNewStockNumber(stockVal) ? "new" : "used");
+  // Some vehicles show "Pending" (or are blank) in the main Price column
+  // while a real number is already sitting in Pending Price — use that
+  // instead of leaving price blank.
+  const resolvedPrice = parseMoney(getField(row, "price")) ?? parseMoney(getField(row, "pending price"));
   return {
     stock: stockVal,
     year,
@@ -653,8 +658,8 @@ function normalizePricingViewRow(row) {
     odometer: parseNum(getField(row, "odometer")),
     vin: (getField(row, "vin") || "").toString().trim().toUpperCase(),
     days: daysSince(getField(row, "inventory date")),
-    price: markUpPrice(parseMoney(getField(row, "price")), condition === "new"),
-    rawPrice: parseMoney(getField(row, "price")),
+    price: markUpPrice(resolvedPrice, condition === "new"),
+    rawPrice: resolvedPrice,
     priceMarked: true,
     condition,
     certified: /^y/i.test(certifiedVal.trim()),
