@@ -47,7 +47,7 @@ function parseMoney(v) {
 // their browser data.
 const APP_PASSWORD = "MMTROCKS";
 
-const PRICE_MARKUP = 2000;
+const PRICE_MARKUP = 2598; // $2,000 markup + $598 dealer/tag/title fee
 function markUpPrice(price, isNew) {
   if (price === null) return null;
   return isNew ? price : price + PRICE_MARKUP; // no markup on new vehicles
