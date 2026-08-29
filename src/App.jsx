@@ -47,7 +47,8 @@ function parseMoney(v) {
 // their browser data.
 const APP_PASSWORD = "MMTROCKS";
 
-const PRICE_MARKUP = 2598; // $2,000 markup + $598 dealer/tag/title fee
+const PRICE_MARKUP = 2598; // LIST: $2,000 markup + $598 dealer/tag/title fee
+const BUMP_MARKUP = 4598;  // BUMP: $4,000 markup + $598 dealer/tag/title fee
 function markUpPrice(price, isNew) {
   if (price === null) return null;
   return isNew ? price : price + PRICE_MARKUP; // no markup on new vehicles
@@ -868,9 +869,11 @@ export default function LotLedger() {
   const [dragOver, setDragOver] = useState(false);
   const [sortField, setSortField] = useState(() => loadUIState().sortField || "price");
   const [sortDir, setSortDir] = useState(() => loadUIState().sortDir || "desc");
-  // LIST = existing displayed price with the $2,000 + $598 fee markup.
-  // WEB = the actual Internet/sheet price (rawPrice, including Pending Price fallback).
-  const [priceMode, setPriceMode] = useState(() => loadUIState().priceMode || "list");
+  // Used-car display pricing:
+  // LIST = sheet/Internet price + $2,000 + $598 fee.
+  // BUMP = sheet/Internet price + $4,000 + $598 fee.
+  // New cars stay at their actual sheet price in either mode.
+  const [priceMode, setPriceMode] = useState(() => loadUIState().priceMode === "bump" ? "bump" : "list");
   const [showFilters, setShowFilters] = useState(() => loadUIState().showFilters ?? false);
   const [confirmingClear, setConfirmingClear] = useState(false);
   const [exportHref, setExportHref] = useState(null);
@@ -1149,47 +1152,37 @@ export default function LotLedger() {
   const types = useMemo(() => Array.from(new Set(records.map((r) => r.type).filter(Boolean))).sort(), [records]);
   const scanDates = useMemo(() => Array.from(new Set(records.map((r) => r.scanDate).filter(Boolean))).sort().reverse(), [records]);
 
-  // One source of truth for whichever price the user is currently viewing.
-  // LIST = the app's marked-up used-car price.
-  // WEB = the actual spreadsheet/Internet price. Normally rawPrice is that exact
-  // source value. Older saved records can occasionally have rawPrice missing or
-  // accidentally equal to the marked-up price; for USED vehicles only, recover
-  // the true WEB price by subtracting the same $2,598 markup the app applied.
+  // One source of truth for whichever used-car price the user is viewing.
+  // LIST = actual sheet/Internet price + $2,598.
+  // BUMP = actual sheet/Internet price + $4,598.
+  // New vehicles receive no markup in either mode.
   function activePrice(r) {
-    const listPrice = parseMoney(r.price);
+    const storedList = parseMoney(r.price);
     const raw = parseMoney(r.rawPrice);
     const stock = (r.stock || "").toString().trim();
 
-    // If the import preserved two genuinely different prices, that is the
-    // strongest evidence we have: price = LIST, rawPrice = WEB.
-    const hasDistinctRaw = raw !== null && listPrice !== null && Math.abs(raw - listPrice) > 0.01;
+    // If import preserved two genuinely different values, rawPrice is the
+    // actual sheet price and r.price is the normal LIST price.
+    const hasDistinctRaw = raw !== null && storedList !== null && Math.abs(raw - storedList) > 0.01;
 
-    // Pricing-mode fallback for older saved records. Do NOT rely only on the
-    // saved condition flag here: old localStorage data can have an incorrect
-    // condition even though the vehicle is clearly a used-stock unit.
+    // Keep the same older-record protection that made the previous toggle work:
+    // don't rely only on a possibly stale condition flag in localStorage.
     const looksUsedByStock = !/^\d{5}$/.test(stock) || /^T/i.test(stock);
     const usedForPricing = r.condition === "used" || looksUsedByStock || hasDistinctRaw;
 
-    if (priceMode === "web") {
-      // Exact spreadsheet/Internet price wins whenever it exists.
-      if (hasDistinctRaw) return raw;
-      if (raw !== null && !usedForPricing) return raw;
+    // New cars never get LIST or BUMP markup.
+    if (!usedForPricing) return raw ?? storedList;
 
-      // Old used records sometimes saved the marked-up display price in both
-      // fields. Recover the sheet price live so the toggle still works without
-      // forcing the user to clear/re-import inventory.
-      if (usedForPricing && listPrice !== null) {
-        return Math.max(0, listPrice - PRICE_MARKUP);
-      }
-      return raw ?? listPrice;
-    }
+    // Resolve the actual sheet/Internet price first. Older saved used records may
+    // have the LIST price duplicated into rawPrice, so recover the base by
+    // subtracting the normal $2,598 LIST markup.
+    let basePrice = null;
+    if (hasDistinctRaw) basePrice = raw;
+    else if (storedList !== null) basePrice = Math.max(0, storedList - PRICE_MARKUP);
+    else if (raw !== null) basePrice = raw;
 
-    // LIST mode. Normally r.price is already marked up. If an older used record
-    // only has the raw sheet price stored, construct LIST live from that value.
-    if (usedForPricing && raw !== null && listPrice !== null && Math.abs(listPrice - raw) < 0.01) {
-      return raw + PRICE_MARKUP;
-    }
-    return listPrice ?? (usedForPricing && raw !== null ? raw + PRICE_MARKUP : raw);
+    if (basePrice === null) return null;
+    return basePrice + (priceMode === "bump" ? BUMP_MARKUP : PRICE_MARKUP);
   }
 
   const filtered = useMemo(() => {
@@ -1677,17 +1670,17 @@ export default function LotLedger() {
                   </div>
                   <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 2, marginLeft: 32, width: "calc(100% - 32px)", flexWrap: "wrap", position: "relative" }}>
                     <button
-                      onClick={() => setPriceMode((m) => (m === "list" ? "web" : "list"))}
-                      title={priceMode === "list" ? "Showing list price (markup + fee). Tap for Internet/sheet price." : "Showing Internet/sheet price. Tap for list price."}
+                      onClick={() => setPriceMode((m) => (m === "list" ? "bump" : "list"))}
+                      title={priceMode === "list" ? "LIST: sheet price + $2,598. Tap for BUMP." : "BUMP: sheet price + $4,598. Tap for LIST."}
                       style={{
-                        background: priceMode === "web" ? "#3FA796" : "#3A3F49",
-                        border: `1px solid ${priceMode === "web" ? "#62C2B1" : "#6B7280"}`,
+                        background: priceMode === "bump" ? "#3FA796" : "#3A3F49",
+                        border: `1px solid ${priceMode === "bump" ? "#62C2B1" : "#6B7280"}`,
                         color: "#ECE7DC", fontWeight: 700, borderRadius: 6,
                         padding: "5px 10px", fontSize: 13.5, cursor: "pointer",
                         position: "absolute", left: 0,
                       }}
                     >
-                      {priceMode === "list" ? "LIST" : "WEB"}
+                      {priceMode === "list" ? "LIST" : "BUMP"}
                     </button>
                     <button
                       onClick={() => setFilters((f) => ({
@@ -1917,4 +1910,4 @@ export default function LotLedger() {
       ))}
     </div>
   );
-                                        }
+      }
