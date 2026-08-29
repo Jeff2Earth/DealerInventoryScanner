@@ -1150,9 +1150,31 @@ export default function LotLedger() {
   const scanDates = useMemo(() => Array.from(new Set(records.map((r) => r.scanDate).filter(Boolean))).sort().reverse(), [records]);
 
   // One source of truth for whichever price the user is currently viewing.
-  // WEB uses rawPrice from the spreadsheet; LIST uses the existing marked-up price.
+  // LIST = the app's marked-up used-car price.
+  // WEB = the actual spreadsheet/Internet price. Normally rawPrice is that exact
+  // source value. Older saved records can occasionally have rawPrice missing or
+  // accidentally equal to the marked-up price; for USED vehicles only, recover
+  // the true WEB price by subtracting the same $2,598 markup the app applied.
   function activePrice(r) {
-    return priceMode === "web" ? (r.rawPrice ?? r.price ?? null) : (r.price ?? null);
+    const listPrice = parseMoney(r.price);
+    if (priceMode === "list") return listPrice;
+
+    const raw = parseMoney(r.rawPrice);
+
+    // New vehicles never receive PRICE_MARKUP, so their WEB/LIST price is the
+    // same unless the spreadsheet explicitly supplied a separate raw value.
+    if (isNewVehicle(r)) return raw ?? listPrice;
+
+    // For used vehicles, trust a genuinely distinct spreadsheet raw price.
+    if (raw !== null && listPrice !== null && Math.abs(raw - listPrice) > 0.01) {
+      return raw;
+    }
+
+    // Migration/fallback for previously saved records where rawPrice was absent
+    // or had been saved equal to the already-marked-up display price.
+    if (listPrice !== null) return Math.max(0, listPrice - PRICE_MARKUP);
+
+    return raw;
   }
 
   const filtered = useMemo(() => {
