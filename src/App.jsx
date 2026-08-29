@@ -1157,24 +1157,39 @@ export default function LotLedger() {
   // the true WEB price by subtracting the same $2,598 markup the app applied.
   function activePrice(r) {
     const listPrice = parseMoney(r.price);
-    if (priceMode === "list") return listPrice;
-
     const raw = parseMoney(r.rawPrice);
+    const stock = (r.stock || "").toString().trim();
 
-    // New vehicles never receive PRICE_MARKUP, so their WEB/LIST price is the
-    // same unless the spreadsheet explicitly supplied a separate raw value.
-    if (isNewVehicle(r)) return raw ?? listPrice;
+    // If the import preserved two genuinely different prices, that is the
+    // strongest evidence we have: price = LIST, rawPrice = WEB.
+    const hasDistinctRaw = raw !== null && listPrice !== null && Math.abs(raw - listPrice) > 0.01;
 
-    // For used vehicles, trust a genuinely distinct spreadsheet raw price.
-    if (raw !== null && listPrice !== null && Math.abs(raw - listPrice) > 0.01) {
-      return raw;
+    // Pricing-mode fallback for older saved records. Do NOT rely only on the
+    // saved condition flag here: old localStorage data can have an incorrect
+    // condition even though the vehicle is clearly a used-stock unit.
+    const looksUsedByStock = !/^\d{5}$/.test(stock) || /^T/i.test(stock);
+    const usedForPricing = r.condition === "used" || looksUsedByStock || hasDistinctRaw;
+
+    if (priceMode === "web") {
+      // Exact spreadsheet/Internet price wins whenever it exists.
+      if (hasDistinctRaw) return raw;
+      if (raw !== null && !usedForPricing) return raw;
+
+      // Old used records sometimes saved the marked-up display price in both
+      // fields. Recover the sheet price live so the toggle still works without
+      // forcing the user to clear/re-import inventory.
+      if (usedForPricing && listPrice !== null) {
+        return Math.max(0, listPrice - PRICE_MARKUP);
+      }
+      return raw ?? listPrice;
     }
 
-    // Migration/fallback for previously saved records where rawPrice was absent
-    // or had been saved equal to the already-marked-up display price.
-    if (listPrice !== null) return Math.max(0, listPrice - PRICE_MARKUP);
-
-    return raw;
+    // LIST mode. Normally r.price is already marked up. If an older used record
+    // only has the raw sheet price stored, construct LIST live from that value.
+    if (usedForPricing && raw !== null && listPrice !== null && Math.abs(listPrice - raw) < 0.01) {
+      return raw + PRICE_MARKUP;
+    }
+    return listPrice ?? (usedForPricing && raw !== null ? raw + PRICE_MARKUP : raw);
   }
 
   const filtered = useMemo(() => {
@@ -1758,7 +1773,7 @@ export default function LotLedger() {
                     ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody key={priceMode}>
                   {filtered.map((r, i) => (
                     <tr key={r.vin + r.scanDate + i} className="lg-row" style={{ background: i % 2 ? "#22252B" : "#24272E" }}>
                       <td style={{ padding: "4px 5px" }}>{r.year}</td>
@@ -1902,4 +1917,4 @@ export default function LotLedger() {
       ))}
     </div>
   );
-      }
+    }
