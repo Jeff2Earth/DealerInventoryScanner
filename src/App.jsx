@@ -868,6 +868,9 @@ export default function LotLedger() {
   const [dragOver, setDragOver] = useState(false);
   const [sortField, setSortField] = useState(() => loadUIState().sortField || "price");
   const [sortDir, setSortDir] = useState(() => loadUIState().sortDir || "desc");
+  // LIST = existing displayed price with the $2,000 + $598 fee markup.
+  // WEB = the actual Internet/sheet price (rawPrice, including Pending Price fallback).
+  const [priceMode, setPriceMode] = useState(() => loadUIState().priceMode || "list");
   const [showFilters, setShowFilters] = useState(() => loadUIState().showFilters ?? false);
   const [confirmingClear, setConfirmingClear] = useState(false);
   const [exportHref, setExportHref] = useState(null);
@@ -1146,6 +1149,12 @@ export default function LotLedger() {
   const types = useMemo(() => Array.from(new Set(records.map((r) => r.type).filter(Boolean))).sort(), [records]);
   const scanDates = useMemo(() => Array.from(new Set(records.map((r) => r.scanDate).filter(Boolean))).sort().reverse(), [records]);
 
+  // One source of truth for whichever price the user is currently viewing.
+  // WEB uses rawPrice from the spreadsheet; LIST uses the existing marked-up price.
+  function activePrice(r) {
+    return priceMode === "web" ? (r.rawPrice ?? r.price ?? null) : (r.price ?? null);
+  }
+
   const filtered = useMemo(() => {
     let out = records.filter((r) => {
       if (filters.search) {
@@ -1153,7 +1162,7 @@ export default function LotLedger() {
         const exteriorColor = r.color ? r.color.split(" / ")[0] : r.color;
         const haystack = [
           r.stock, r.year, r.make, r.model, r.type, r.desc, r.status, r.recall,
-          exteriorColor, getBasicColor(exteriorColor), r.drivetrain, r.odometer, r.vin, r.days, r.price, r.jdPower, r.certified ? "certified" : "",
+          exteriorColor, getBasicColor(exteriorColor), r.drivetrain, r.odometer, r.vin, r.days, activePrice(r), r.jdPower, r.certified ? "certified" : "",
           isNewVehicle(r) ? "new" : "used pre-owned",
         ]
           .filter((v) => v !== null && v !== undefined)
@@ -1191,8 +1200,9 @@ export default function LotLedger() {
       if (filters.scanDate.length && !filters.scanDate.includes(r.scanDate)) return false;
       if (filters.yearMin && (!r.year || r.year < parseInt(filters.yearMin))) return false;
       if (filters.yearMax && (!r.year || r.year > parseInt(filters.yearMax))) return false;
-      if (filters.priceMin && (r.price === null || r.price < parseFloat(filters.priceMin))) return false;
-      if (filters.priceMax && (r.price === null || r.price > parseFloat(filters.priceMax))) return false;
+      const price = activePrice(r);
+      if (filters.priceMin && (price === null || price < parseFloat(filters.priceMin))) return false;
+      if (filters.priceMax && (price === null || price > parseFloat(filters.priceMax))) return false;
       if (filters.odoMax && (r.odometer === null || r.odometer > parseFloat(filters.odoMax))) return false;
       if (filters.certifiedOnly && !r.certified) return false;
       if (filters.condition === "used" && isNewVehicle(r)) return false;
@@ -1200,8 +1210,8 @@ export default function LotLedger() {
       return true;
     });
     out.sort((a, b) => {
-      let av = sortField === "subprime" ? subprimeRatio(a) : a[sortField];
-      let bv = sortField === "subprime" ? subprimeRatio(b) : b[sortField];
+      let av = sortField === "subprime" ? subprimeRatio(a) : sortField === "price" ? activePrice(a) : a[sortField];
+      let bv = sortField === "subprime" ? subprimeRatio(b) : sortField === "price" ? activePrice(b) : b[sortField];
       if (sortField === "subprime") {
         // Vehicles with no ratio (missing JD Power or price) always sink to
         // the bottom, in either sort direction — so ascending genuinely
@@ -1220,7 +1230,7 @@ export default function LotLedger() {
       return 0;
     });
     return out;
-  }, [records, filters, sortField, sortDir]);
+  }, [records, filters, sortField, sortDir, priceMode]);
 
   const totalCount = records.length;
 
@@ -1237,12 +1247,12 @@ export default function LotLedger() {
     try {
       const prev = loadUIState();
       localStorage.setItem("lot-ledger-ui-state", JSON.stringify({
-        ...prev, filters, sortField, sortDir, showFilters,
+        ...prev, filters, sortField, sortDir, showFilters, priceMode,
       }));
     } catch {
       // Storage can fail (quota, private browsing); losing this is fine.
     }
-  }, [filters, sortField, sortDir, showFilters]);
+  }, [filters, sortField, sortDir, showFilters, priceMode]);
 
   // Restores scroll position once, after the list has rendered — needs a
   // brief delay since the page's scrollable height isn't final until the
@@ -1628,7 +1638,20 @@ export default function LotLedger() {
                     <input className="lg-input" type="number" placeholder="Price max ($)" value={filters.priceMax}
                       onChange={(e) => setFilters((f) => ({ ...f, priceMax: e.target.value }))} />
                   </div>
-                  <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 2, flexWrap: "wrap" }}>
+                  <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 2, flexWrap: "wrap", position: "relative" }}>
+                    <button
+                      onClick={() => setPriceMode((m) => (m === "list" ? "web" : "list"))}
+                      title={priceMode === "list" ? "Showing list price (markup + fee). Tap for Internet/sheet price." : "Showing Internet/sheet price. Tap for list price."}
+                      style={{
+                        background: priceMode === "web" ? "#3FA796" : "#3A3F49",
+                        border: `1px solid ${priceMode === "web" ? "#62C2B1" : "#6B7280"}`,
+                        color: "#ECE7DC", fontWeight: 700, borderRadius: 6,
+                        padding: "5px 10px", fontSize: 13.5, cursor: "pointer",
+                        position: "absolute", left: 0,
+                      }}
+                    >
+                      {priceMode === "list" ? "LIST" : "WEB"}
+                    </button>
                     <button
                       onClick={() => setFilters((f) => ({
                         ...f,
@@ -1734,7 +1757,7 @@ export default function LotLedger() {
                         ))}
                         <div style={{ color: "#6B6D70", fontSize: 13 }}>{r.desc}</div>
                       </td>
-                      <td className="lg-mono" style={{ padding: "4px 5px" }}>{r.price !== null ? `$${r.price.toLocaleString()}` : ""}</td>
+                      <td className="lg-mono" style={{ padding: "4px 5px" }}>{activePrice(r) !== null ? `$${activePrice(r).toLocaleString()}` : ""}</td>
                       <td className="lg-mono" style={{ padding: "4px 5px" }}>{r.odometer?.toLocaleString?.() ?? ""}</td>
                       <td style={{ padding: "4px 5px" }}>
                         {r.color && r.color.includes(" / ") ? (
@@ -1857,4 +1880,4 @@ export default function LotLedger() {
       ))}
     </div>
   );
-    }
+      }
