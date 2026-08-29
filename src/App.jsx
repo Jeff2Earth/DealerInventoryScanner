@@ -1675,7 +1675,7 @@ export default function LotLedger() {
                     <input className="lg-input" type="number" placeholder="Price max ($)" value={filters.priceMax}
                       onChange={(e) => setFilters((f) => ({ ...f, priceMax: e.target.value }))} />
                   </div>
-                  <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 2, flexWrap: "wrap", position: "relative" }}>
+                  <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 2, marginLeft: 32, width: "calc(100% - 32px)", flexWrap: "wrap", position: "relative" }}>
                     <button
                       onClick={() => setPriceMode((m) => (m === "list" ? "web" : "list"))}
                       title={priceMode === "list" ? "Showing list price (markup + fee). Tap for Internet/sheet price." : "Showing Internet/sheet price. Tap for list price."}
@@ -1917,4 +1917,4 @@ export default function LotLedger() {
       ))}
     </div>
   );
-    }
+                                        }
